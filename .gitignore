@@ -1,0 +1,6 @@
+# data
+data
+*.npz
+
+# Editors
+settings.json

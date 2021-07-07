@@ -46,17 +46,4 @@ class NeRFCls(nn.Module):
         - TBD
         """
         pass
-
-
-    def sample_rays(self, o, d):
-        pass
-
-    def positional_encoding(self, x, L):
-        """
-        Positional encoding on every vectors in a batch.
-
-        Args:
-        - x: A Tensor of size (B, S). Batch of vectors.
-        - L: Level of positional encoding.
-        """
-        pass        
+         

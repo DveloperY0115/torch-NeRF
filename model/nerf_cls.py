@@ -18,16 +18,16 @@ class NeRFCls(nn.Module):
         view_dir_dim: int = 3,
         L_pos: int = 10,
         L_direction: int = 4,
-        sampling_method: str = "coarse",
     ):
         """
         Constructor for NeRF.
 
         Args:
+        - pos_dim: Dimensionality of vector representing a point in space. Set to 3 by default.
+        - view_dir_dim: Dimensionality of vector representing a view direction. Set to 3 by default.
         - L_position: Level of positional encoding for positional vectors. Set to 3 by default.
         - L_direction: Level of positional encoding for viewing (direction) vectors.
             Set to 3 by default (unit vector instead of spherical notaion).
-        - sampling_method: Selector for sampling method. Can be either 'coarse' or 'fine'. Set to 'coarse' by default.
         """
         super().__init__()
 
@@ -36,15 +36,6 @@ class NeRFCls(nn.Module):
 
         self.L_pos = L_pos
         self.L_direction = L_direction
-
-        if sampling_method == "coarse":
-            self.is_coarse = True  # coarse network
-        elif sampling_method == "fine":
-            self.is_coarse = False  # fine network
-        else:
-            print(
-                "[!] Please provide valid value! Sampling method can be either 'coarse' or 'fine'."
-            )
 
         # Positional encoders for each input of forward method
         self.coord_encoder = NeRFPositionalEncoder(in_dim=3, L=self.L_pos)

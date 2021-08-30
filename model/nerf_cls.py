@@ -12,18 +12,29 @@ from .positional_encoder import NeRFPositionalEncoder
 
 
 class NeRFCls(nn.Module):
-    def __init__(self, L_coordinate: int = 10, L_direction: int = 4, sampling_method: str = "coarse"):
+    def __init__(
+        self,
+        pos_dim: int = 3,
+        view_dir_dim: int = 3,
+        L_pos: int = 10,
+        L_direction: int = 4,
+        sampling_method: str = "coarse",
+    ):
         """
         Constructor for NeRF.
 
         Args:
-        - L_position: Level of positional encoding for positional vectors
-        - L_direction: Level of positional encoding for viewing (direction) vectors
+        - L_position: Level of positional encoding for positional vectors. Set to 3 by default.
+        - L_direction: Level of positional encoding for viewing (direction) vectors.
+            Set to 3 by default (unit vector instead of spherical notaion).
         - sampling_method: Selector for sampling method. Can be either 'coarse' or 'fine'. Set to 'coarse' by default.
         """
         super().__init__()
 
-        self.L_coordinate = L_coordinate
+        self.pos_dim = pos_dim
+        self.view_dir_dim = view_dir_dim
+
+        self.L_pos = L_pos
         self.L_direction = L_direction
 
         if sampling_method == "coarse":
@@ -31,27 +42,29 @@ class NeRFCls(nn.Module):
         elif sampling_method == "fine":
             self.is_coarse = False  # fine network
         else:
-            print("[!] Please provide valid value! Sampling method can be either 'coarse' or 'fine'.")
+            print(
+                "[!] Please provide valid value! Sampling method can be either 'coarse' or 'fine'."
+            )
 
         # Positional encoders for each input of forward method
-        self.coord_encoder = NeRFPositionalEncoder(in_dim=3, L=self.L_coordinate)
+        self.coord_encoder = NeRFPositionalEncoder(in_dim=3, L=self.L_pos)
         self.direction_encoder = NeRFPositionalEncoder(in_dim=2, L=self.L_direction)
 
         # MLPs approximating radiance field
-        self.fc_in = nn.Linear(3 * 2 * self.L_coordinate, 256)
+        self.fc_in = nn.Linear(self.pos_dim * 2 * self.L_pos, 256)
 
         self.fc_1 = nn.Linear(256, 256)
         self.fc_2 = nn.Linear(256, 256)
         self.fc_3 = nn.Linear(256, 256)
         self.fc_4 = nn.Linear(256, 256)
 
-        self.fc_5 = nn.Linear(3 * 2 * self.L_coordinate + 256, 256)
+        self.fc_5 = nn.Linear(self.pos_dim * 2 * self.L_pos + 256, 256)
 
         self.fc_6 = nn.Linear(256, 256)
         self.fc_7 = nn.Linear(256, 256)
 
         self.fc_8 = nn.Linear(256, 256 + 1)
-        self.fc_9 = nn.Linear(256 + 1 + 2 * 2 * self.L_direction, 128)
+        self.fc_9 = nn.Linear(256 + 1 + self.view_dir_dim * 2 * self.L_direction, 128)
 
         self.fc_out = nn.Linear(128, 3)
 
@@ -69,7 +82,7 @@ class NeRFCls(nn.Module):
         """
 
         # positional encoding for inputs
-        x = self.coord_encoder.encode(x)  # (B, N, 3) -> (B, N, 2 * 3 * L_coordinate)
+        x = self.coord_encoder.encode(x)  # (B, N, 3) -> (B, N, 2 * 3 * L_pos)
         d = self.direction_encoder.encode(d)  # (B, N, 3) -> (B, N, 2 * 3 * L_direction)
 
         skip = x.clone()

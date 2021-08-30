@@ -13,6 +13,12 @@ from .load_blender import load_blender_data
 
 class BlenderDataset(data.Dataset):
     def __init__(self, root_dir: str) -> None:
+        """
+        Abstract dataset object for 'synthetic blender' dataset.
+
+        Args:
+        - root_dir: Root directory of dataset to be loaded.
+        """
         super().__init__()
 
         (
@@ -27,9 +33,7 @@ class BlenderDataset(data.Dataset):
         self.img_width = self.camera_params[1]
         self.focal_length = self.camera_params[2]
 
-        assert (
-            self.imgs[0] == self.poses[0] and self.poses[0] == self.render_poses[0]
-        ), "[!] Dataset sizes do not match."
+        assert self.imgs.shape[0] == self.poses.shape[0], "[!] Dataset sizes do not match."
 
         print("==============================")
         print("[!] Loaded data successfully.")
@@ -39,4 +43,4 @@ class BlenderDataset(data.Dataset):
         return self.imgs[0]
 
     def __getitem__(self, index):
-        return self.imgs[index], self.poses[index], self.render_poses[index]
+        return self.imgs[index], self.poses[index]

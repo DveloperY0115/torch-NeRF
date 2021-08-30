@@ -1,5 +1,7 @@
 """
 positional_encoder.py - Class for efficient positional encoding.
+
+Implementation influenced by: https://github.com/yenchenlin/nerf-pytorch/blob/master/run_nerf_helpers.py
 """
 
 from math import pi
@@ -8,7 +10,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# TODO: Implement positional encoding
 
 class NeRFPositionalEncoder(object):
     def __init__(self, in_dim: int, L: int):
@@ -30,7 +31,21 @@ class NeRFPositionalEncoder(object):
 
     def create_embedding_fn(self):
         """
+        Create embedding function from given number of frequency bands and dimension of data being encoded.
 
+        The definition of positional encoding function is as follows:
+        f(p) = (sin(2^0 * pi * p), cos(2^0 * pi * p), ..., sin(2^{L-1} * pi * p), cos(2^{L-1} * pi * p))
+        and is computed on each (x, y, z) or (theta, phi) triplet (or tuple).
+
+        Thus, the form of resulting tensor is:
+        f(pos) = [
+                sin(2^0 * pi * x), sin(2^0 * pi * y), sin(2^0 * pi * z),  
+                cos(2^0 * pi * x), cos(2^0 * pi * y), cos(2^0 * pi * z), 
+                    ...
+                ]
+        where pos = (x, y, z)
+
+        For details, please refer to section 5.1 of NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis, Mildenhall et al. (ECCV 2020) 
         """
         embed_fns = []
 
@@ -46,6 +61,7 @@ class NeRFPositionalEncoder(object):
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
         """
+        Compute positional encoding on the given tensor.
 
         Args:
         - x: Tensor of shape (B, N, C) whose elements will be encoded.

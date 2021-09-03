@@ -19,7 +19,8 @@ from pytorch3d.renderer import (
 )
 
 from model.nerf_cls import NeRFCls
-from utils.blender_dataset import BlenderDataset
+from utils.dataset import NeRFDataset
+from utils.load_blender import load_blender_data
 from .base_trainer import BaseTrainer
 
 
@@ -71,15 +72,20 @@ class NeRFTrainer(BaseTrainer):
     def configure_dataset(self) -> Tuple[torch.utils.data.Dataset, torch.utils.data.Dataset]:
 
         if self.opts.dataset == "Blender":
-            dataset = BlenderDataset(self.opts.dataset_dir)
+            images, poses, render_poses, (H, W, focal), idx_split = load_blender_data(
+                self.opts.dataset_dir
+            )
+            idx_train, idx_val, idx_test = idx_split
 
+            near = 2.0
+            far = 6.0
         else:
             # TODO: Support other kinds of datasets
             pass
 
         print("[!] Dataset used: {}".format(self.opts.dataset))
 
-        return train_dataset, test_dataset
+        return images, poses, render_poses, (H, W, focal), idx_train, idx_val, idx_test
 
     def configure_dataloader(
         self,

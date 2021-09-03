@@ -13,7 +13,7 @@ class NeRFDataset(data.Dataset):
         self,
         imgs: torch.Tensor,
         poses: torch.Tensor,
-        camera_params: Tuple[float, float, float],
+        camera_params: Tuple[float, float, float, float, float],
     ) -> None:
         """
         Train dataset for NeRF.
@@ -25,6 +25,8 @@ class NeRFDataset(data.Dataset):
             - height of image (or viewport)
             - width of image (or viewport)
             - focal length of the camera
+            - z_near value
+            - z_far value
         """
         super().__init__()
 
@@ -47,5 +49,7 @@ class NeRFDataset(data.Dataset):
             - height of image (or viewport)
             - width of image (or viewport)
             - focal length of the camera
+            - z_near value
+            - z_far value
         """
         return self.camera_params

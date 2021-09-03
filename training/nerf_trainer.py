@@ -71,7 +71,7 @@ class NeRFTrainer(BaseTrainer):
 
     def configure_dataset(self) -> Tuple[torch.utils.data.Dataset, torch.utils.data.Dataset]:
 
-        if self.opts.dataset == "Blender":
+        if self.opts.dataset_type == "Blender":
             images, poses, render_poses, (H, W, focal), idx_split = load_blender_data(
                 self.opts.dataset_dir
             )
@@ -83,7 +83,8 @@ class NeRFTrainer(BaseTrainer):
             # TODO: Support other kinds of datasets
             pass
 
-        print("[!] Dataset used: {}".format(self.opts.dataset))
+        print("[!] Successfully loaded dataset at: {}".format(self.opts.dataset_dir))
+        print("[!] Dataset used: {}".format(self.opts.dataset_type))
 
         return images, poses, render_poses, (H, W, focal), idx_train, idx_val, idx_test
 

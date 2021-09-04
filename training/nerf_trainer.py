@@ -55,13 +55,27 @@ class NeRFTrainer(BaseTrainer):
             wandb.init(project="NeRF-{}-{}".format(str(type(self.model)), self.opts.dataset_type))
 
     def train(self):
-    
-        pass
+        for self.epoch in range(self.initial_epoch, self.opts.num_epoch):
+            _ = self.train_one_epoch()
+            _, self.validate_one_epoch()
+
+            print("=======================================")
+            print("Epoch {}".format(self.epoch))
+            # print("Training loss: {}".format(train_loss))
+            # print("Test loss: {}".format(test_loss))
+            print("=======================================")
+        
+            if self.opts.log_wandb:
+                # wandb.log(something)
+                pass
+
+            if (self.epcoh + 1) % self.opts.save_period == 0:
+                self.save_checkpoint()
 
     def train_one_epoch(self):
         pass
 
-    def test_one_epoch(self):
+    def validate_one_epoch(self):
         pass
 
     def initialize_renderer(

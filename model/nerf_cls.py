@@ -3,6 +3,8 @@ NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis, Ben Mild
 """
 
 from typing import Tuple
+from pytorch3d.renderer.implicit.utils import RayBundle
+from pytorch3d.renderer.implicit.utils import ray_bundle_to_ray_points
 
 import torch
 import torch.nn as nn
@@ -59,18 +61,24 @@ class NeRFCls(nn.Module):
 
         self.fc_out = nn.Linear(128, 3)
 
-    def forward(self, x: torch.Tensor, d: torch.Tensor) -> Tuple[torch.Tensor]:
+    def forward(self, ray_bundle: RayBundle) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward propagation of NeRF.
 
         Args:
-        - x: Tensor of shape (B, N, 3). Tensor of sample point coordinates.
-        - d: Tensor of shape (B, N, 3). Tensor of view direction vectors.
+        - ray_bundle: RayBundle object consists of:
+            - origins: Tensor of shape (B, ..., 3) representing the origins of the rays.
+            - directions: Tensor of shape (B, ..., 3) representing the directions of the rays.
+            - lengths: Tensor of shape (B, ..., n_pts_per_ray) representing the parameters denoting
+                at which the points on rays are sampled.
+            - xys: Tensor of shape (B, ..., 2) representing the xy locations of each ray's pixel in the screen space.
 
         Returns:
         - sigma: Tensor of shape (B, N). Tensor of density at each input point.
         - rgb: Tensor of shape (B, N, 3). Tensor of radiance at each input point.
         """
+        # TODO: Modify this function using Pytorch3D functionalities!!
+        x = ray_bundle_to_ray_points(ray_bundle)
 
         # positional encoding for inputs
         x = self.coord_encoder.encode(x)  # (B, N, 3) -> (B, N, 2 * 3 * L_pos)

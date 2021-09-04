@@ -48,9 +48,9 @@ class NeRFDataset(data.Dataset):
 
     def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Get one sample of ground truth image, associated camera pose, respectively.
+        Get one sample of ground truth image (RGB), associated camera pose, respectively.
         """
-        return self.imgs[index], self.poses[index]
+        return self.imgs[index, :, :, :-1], self.poses[index]
 
     def get_camera_params(self):
         """

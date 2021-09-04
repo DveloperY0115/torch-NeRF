@@ -1,12 +1,13 @@
 from argparse import Namespace
 from typing import Tuple
-from utils.render_utils import render
+from tqdm import tqdm
 import wandb
 
 import torch
 import torch.optim as optim
 import torch.utils.data as data
 
+import pytorch3d
 from pytorch3d.structures import Volumes
 from pytorch3d.transforms import so3_exp_map
 from pytorch3d.renderer import (
@@ -72,7 +73,7 @@ class NeRFTrainer(BaseTrainer):
                 # wandb.log(something)
                 pass
 
-            if (self.epcoh + 1) % self.opts.save_period == 0:
+            if (self.epoch + 1) % self.opts.save_period == 0:
                 # rendered_imgs = self.render_imgs()
                 # save imgs.. to check whether the training is done well
                 self.save_checkpoint()
@@ -86,8 +87,10 @@ class NeRFTrainer(BaseTrainer):
 
         for idx_batch, (imgs, poses) in enumerate(
             tqdm(self.train_loader, bar_format="{l_bar}{bar:20}{r_bar}{bar:-20b}")
-            ):
-            
+        ):
+            print(imgs.shape, poses.shape)
+
+        return train_loss
 
     def validate_one_epoch(self):
         """

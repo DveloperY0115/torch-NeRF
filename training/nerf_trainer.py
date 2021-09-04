@@ -96,9 +96,9 @@ class NeRFTrainer(BaseTrainer):
 
             # initialize batch of cameras
             camera_params = self.train_dataset.get_camera_params()
-            z_near = torch.tensor(camera_params["z_near"]).expand(B, 1)
-            z_far = torch.tensor(camera_params["z_far"]).expand(B, 1)
-            f = torch.tensor(camera_params["f"]).expand(B, 1)
+            z_near = torch.tensor(camera_params["z_near"], device=self.device).expand(B)
+            z_far = torch.tensor(camera_params["z_far"], device=self.device).expand(B)
+            f = torch.tensor(camera_params["f"], device=self.device).expand(B)
             fov = 2 * torch.atan(1 / f)
 
             cameras = FoVPerspectiveCameras(
@@ -106,7 +106,7 @@ class NeRFTrainer(BaseTrainer):
                 T=poses[:, :3, 3],
                 znear=z_near,
                 zfar=z_far,
-                aspect_ratio=1,
+                aspect_ratio=torch.ones_like(z_near),
                 fov=fov,
                 device=self.device,
             )
@@ -118,7 +118,7 @@ class NeRFTrainer(BaseTrainer):
             rendered_imgs, _ = torch.split(rendered_imgs_and_silhouettes, [3, 1], dim=-1)
 
             # compute L1 loss between GT and predicted image
-            loss = nn.HuberLoss(delta=0.1)(rendered_imgs, imgs)
+            colors_at_rays = 
 
             # back prop.
             loss.backward()

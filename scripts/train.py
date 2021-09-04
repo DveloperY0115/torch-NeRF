@@ -26,7 +26,7 @@ parser.add_argument("--dataset_type", type=str, default="Blender")
 parser.add_argument("--dataset_dir", type=str, default="data/nerf_synthetic/lego")
 
 # Training
-parser.add_argument("--batch_size", type=int, default=32)
+parser.add_argument("--batch_size", type=int, default=10)
 parser.add_argument("--num_workers", type=int, default=0)
 parser.add_argument("--num_epoch", type=int, default=10000)
 parser.add_argument("--lr", type=float, default=1e-4)

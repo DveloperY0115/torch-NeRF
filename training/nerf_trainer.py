@@ -55,6 +55,9 @@ class NeRFTrainer(BaseTrainer):
             wandb.init(project="NeRF-{}-{}".format(str(type(self.model)), self.opts.dataset_type))
 
     def train(self):
+        """
+        Train the model.
+        """
         for self.epoch in range(self.initial_epoch, self.opts.num_epoch):
             _ = self.train_one_epoch()
             _, self.validate_one_epoch()
@@ -64,18 +67,41 @@ class NeRFTrainer(BaseTrainer):
             # print("Training loss: {}".format(train_loss))
             # print("Test loss: {}".format(test_loss))
             print("=======================================")
-        
+
             if self.opts.log_wandb:
                 # wandb.log(something)
                 pass
 
             if (self.epcoh + 1) % self.opts.save_period == 0:
+                # rendered_imgs = self.render_imgs()
+                # save imgs.. to check whether the training is done well
                 self.save_checkpoint()
 
     def train_one_epoch(self):
-        pass
+        """
+        Train the model for one epoch.
+        """
+
+        train_loss = 0.0
+
+        for idx_batch, (imgs, poses) in enumerate(
+            tqdm(self.train_loader, bar_format="{l_bar}{bar:20}{r_bar}{bar:-20b}")
+            ):
+            
 
     def validate_one_epoch(self):
+        """
+        Validate the model for one epoch.
+        """
+        pass
+
+    def render_imgs(self) -> torch.Tensor:
+        """
+        Render images using the trained neural radiance field.
+
+        Returns:
+        - rendered_imgs: Tensor of shape (B, C, H, W) representing a batch of rendered images.
+        """
         pass
 
     def initialize_renderer(

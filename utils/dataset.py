@@ -41,9 +41,15 @@ class NeRFDataset(data.Dataset):
         self.camera_params["z_far"] = camera_params[4]
 
     def __len__(self):
+        """
+        Get the number of samples in the dataset.
+        """
         return self.imgs.shape[0]
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Get one sample of ground truth image, associated camera pose, respectively.
+        """
         return self.imgs[index], self.poses[index]
 
     def get_camera_params(self):

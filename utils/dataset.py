@@ -34,11 +34,11 @@ class NeRFDataset(data.Dataset):
         self.poses = poses
 
         self.camera_params = {}
-        self.camera_params["H"] = camera_params[0]
-        self.camera_params["W"] = camera_params[1]
-        self.camera_params["f"] = camera_params[2]
-        self.camera_params["z_near"] = camera_params[3]
-        self.camera_params["z_far"] = camera_params[4]
+        self.camera_params["H"] = int(camera_params[0])
+        self.camera_params["W"] = int(camera_params[1])
+        self.camera_params["f"] = float(camera_params[2])
+        self.camera_params["z_near"] = float(camera_params[3])
+        self.camera_params["z_far"] = float(camera_params[4])
 
     def __len__(self):
         """

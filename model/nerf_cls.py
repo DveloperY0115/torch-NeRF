@@ -61,7 +61,7 @@ class NeRFCls(nn.Module):
 
         self.fc_out = nn.Linear(128, 3)
 
-    def forward(self, ray_bundle: RayBundle) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, ray_bundle: RayBundle, **kwargs) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward propagation of NeRF.
 
@@ -79,6 +79,8 @@ class NeRFCls(nn.Module):
         """
         # TODO: Modify this function using Pytorch3D functionalities!!
         x = ray_bundle_to_ray_points(ray_bundle)
+        n_pts_per_ray = x.shape[2]
+        d = ray_bundle.directions.unsqueeze(2).repeat(1, 1, n_pts_per_ray, 1)
 
         # positional encoding for inputs
         x = self.coord_encoder.encode(x)  # (B, N, 3) -> (B, N, 2 * 3 * L_pos)
@@ -92,15 +94,15 @@ class NeRFCls(nn.Module):
         x = F.relu(self.fc_3(x))
         x = F.relu(self.fc_4(x))
 
-        x = torch.cat((x, skip), dim=2)
+        x = torch.cat((x, skip), dim=3)
         x = F.relu(self.fc_5(x))
         x = F.relu(self.fc_6(x))
         x = F.relu(self.fc_7(x))
 
         x = self.fc_8(x)
-        sigma = x[:, :, 0]
-        x = torch.cat((x, d), dim=2)
+        sigma = x[:, :, :, 0].unsqueeze(-1)  # sigma.shape: (B, n_rays, n_pts_per_ray, 1)
+        x = torch.cat((x, d), dim=3)
         x = F.relu(self.fc_9(x))
-        rgb = torch.sigmoid(self.fc_out(x))
+        rgb = torch.sigmoid(self.fc_out(x))  # rgb.shape: (B, n_rays, n_pts_per_ray, 3)
 
         return sigma, rgb

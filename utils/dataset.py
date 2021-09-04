@@ -32,7 +32,13 @@ class NeRFDataset(data.Dataset):
 
         self.imgs = imgs
         self.poses = poses
-        self.camera_params = camera_params
+
+        self.camera_params = {}
+        self.camera_params["H"] = camera_params[0]
+        self.camera_params["W"] = camera_params[1]
+        self.camera_params["f"] = camera_params[2]
+        self.camera_params["z_near"] = camera_params[3]
+        self.camera_params["z_far"] = camera_params[4]
 
     def __len__(self):
         return self.imgs.shape[0]
@@ -45,7 +51,7 @@ class NeRFDataset(data.Dataset):
         Get camera parameters used in the current scene.
 
         Returns:
-        - camera_params: Tuple containing
+        - camera_params: Dict containing
             - height of image (or viewport)
             - width of image (or viewport)
             - focal length of the camera

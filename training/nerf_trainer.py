@@ -4,6 +4,7 @@ from tqdm import tqdm
 import wandb
 
 import torch
+import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 
@@ -16,8 +17,6 @@ from pytorch3d.renderer import (
     MonteCarloRaysampler,
     EmissionAbsorptionRaymarcher,
     ImplicitRenderer,
-    RayBundle,
-    ray_bundle_to_ray_points,
 )
 
 from model.nerf_cls import NeRFCls
@@ -41,6 +40,11 @@ class NeRFTrainer(BaseTrainer):
         # dataset & data loader
         self.train_dataset, self.valid_dataset, self.test_dataset = self.configure_dataset()
         self.train_loader, self.valid_loader, self.test_loader = self.configure_dataloader()
+
+        # renderers
+        self.renderer_grid, self.renderer_mc = self.initialize_renderer()
+        self.renderer_grid.to(self.device)
+        self.renderer_mc.to(self.device)
 
         # load checkpoint if available
         if checkpoint is not None:
@@ -88,7 +92,41 @@ class NeRFTrainer(BaseTrainer):
         for idx_batch, (imgs, poses) in enumerate(
             tqdm(self.train_loader, bar_format="{l_bar}{bar:20}{r_bar}{bar:-20b}")
         ):
-            print(imgs.shape, poses.shape)
+            B = imgs.shape[0]
+
+            # initialize batch of cameras
+            camera_params = self.train_dataset.get_camera_params()
+            z_near = torch.tensor(camera_params["z_near"]).expand(B, 1)
+            z_far = torch.tensor(camera_params["z_far"]).expand(B, 1)
+            f = torch.tensor(camera_params["f"]).expand(B, 1)
+            fov = 2 * torch.atan(1 / f)
+
+            cameras = FoVPerspectiveCameras(
+                R=poses[:, :3, :3],
+                T=poses[:, :3, 3],
+                znear=z_near,
+                zfar=z_far,
+                aspect_ratio=1,
+                fov=fov,
+                device=self.device,
+            )
+
+            # evaluate neural radiance field
+            rendered_imgs_and_silhouettes, sampled_rays = self.renderer_mc(
+                cameras=cameras, volumetric_function=self.model
+            )
+            rendered_imgs, _ = torch.split(rendered_imgs_and_silhouettes, [3, 1], dim=-1)
+
+            # compute L1 loss between GT and predicted image
+            loss = nn.HuberLoss(delta=0.1)(rendered_imgs, imgs)
+
+            # back prop.
+            loss.backward()
+            self.optimizer.step()
+
+            train_loss += loss.item()
+
+        train_loss /= idx_batch + 1
 
         return train_loss
 

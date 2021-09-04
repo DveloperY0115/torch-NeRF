@@ -37,8 +37,8 @@ class NeRFTrainer(BaseTrainer):
         self.lr_scheduler = self.configure_lr_scheduler()
 
         # dataset & data loader
-        self.train_dataset, self.test_dataset = self.configure_dataset()
-        self.train_loader, self.test_loader = self.configure_dataloader()
+        self.train_dataset, self.valid_dataset, self.test_dataset = self.configure_dataset()
+        self.train_loader, self.valid_loader, self.test_loader = self.configure_dataloader()
 
         # load checkpoint if available
         if checkpoint is not None:
@@ -72,13 +72,28 @@ class NeRFTrainer(BaseTrainer):
     def configure_dataset(self) -> Tuple[torch.utils.data.Dataset, torch.utils.data.Dataset]:
 
         if self.opts.dataset_type == "Blender":
-            images, poses, render_poses, (H, W, focal), idx_split = load_blender_data(
+            imgs, poses, render_poses, (H, W, focal), idx_split = load_blender_data(
                 self.opts.dataset_dir
             )
             idx_train, idx_val, idx_test = idx_split
 
-            near = 2.0
-            far = 6.0
+            # set z_near, z_far
+            z_near = 2.0
+            z_far = 6.0
+
+            # split data
+            train_imgs, valid_imgs, test_imgs = imgs[idx_train], imgs[idx_val], imgs[idx_test]
+            train_poses, valid_poses, test_poses = poses[idx_train], poses[idx_val], poses[idx_test]
+
+            train_dataset = NeRFDataset(
+                train_imgs, train_poses, camera_params=[int(H), int(W), focal, z_near, z_far]
+            )
+            valid_dataset = NeRFDataset(
+                valid_imgs, valid_poses, camera_params=[int(H), int(W), focal, z_near, z_far]
+            )
+            test_dataset = NeRFDataset(
+                test_imgs, test_poses, camera_params=[int(H), int(W), focal, z_near, z_far]
+            )
         else:
             # TODO: Support other kinds of datasets
             pass
@@ -86,7 +101,7 @@ class NeRFTrainer(BaseTrainer):
         print("[!] Successfully loaded dataset at: {}".format(self.opts.dataset_dir))
         print("[!] Dataset used: {}".format(self.opts.dataset_type))
 
-        return images, poses, render_poses, (H, W, focal), idx_train, idx_val, idx_test
+        return train_dataset, valid_dataset, test_dataset
 
     def configure_dataloader(
         self,
@@ -98,8 +113,15 @@ class NeRFTrainer(BaseTrainer):
             num_workers=self.opts.num_workers,
         )
 
-        test_loader = data.DataLoader(
-            self.test_dataset, batch_size=self.opts.test_dataset_size, shuffle=False
+        valid_loader = data.DataLoader(
+            self.valid_dataset,
+            batch_size=self.opts.batch_size,
+            shuffle=True,
+            num_workers=self.opts.num_workers,
         )
 
-        return train_loader, test_loader
+        test_loader = data.DataLoader(
+            self.test_dataset, batch_size=self.opts.batch_size, shuffle=False
+        )
+
+        return train_loader, valid_loader, test_loader

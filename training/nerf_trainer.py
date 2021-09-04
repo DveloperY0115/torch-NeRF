@@ -1,5 +1,6 @@
 from argparse import Namespace
 from typing import Tuple
+from utils.render_utils import render
 import wandb
 
 import torch
@@ -54,6 +55,7 @@ class NeRFTrainer(BaseTrainer):
             wandb.init(project="NeRF-{}-{}".format(str(type(self.model)), self.opts.dataset_type))
 
     def train(self):
+    
         pass
 
     def train_one_epoch(self):
@@ -61,6 +63,59 @@ class NeRFTrainer(BaseTrainer):
 
     def test_one_epoch(self):
         pass
+
+    def initialize_renderer(
+        self,
+    ) -> Tuple[pytorch3d.renderer.ImplicitRenderer, pytorch3d.renderer.ImplicitRenderer]:
+        """
+        Create renderer used for retrieving images from neural radiance fields.
+
+        Returns:
+        - renderer_grid: Renderer using NDCGridRaysampler as ray sampler.
+        - renderer_mc: Renderer using MonteCarloRaysampler as ray sampler.
+        """
+        # Number of pixels of rendered images along each dimension.
+        # For better quality, the renderer will first render double resolution image
+        # and then resize the image to fit target size (supersampling).
+        render_size = self.train_dataset.get_camera_params()["H"] * 2
+
+        # The object is assumed to lie at the world origin, (0, 0, 0).
+        # Therefore, the radiance field will only be defined within finite volume.
+        volume_extent_world = 3.0
+
+        # NDCGridRaysampler generates a rectangular image grid
+        # of rays whose coordinates follow the convention of Pytorch3D.
+        raysampler_grid = NDCGridRaysampler(
+            image_height=render_size,
+            image_width=render_size,
+            n_pts_per_ray=128,
+            min_depth=0.1,
+            max_depth=volume_extent_world,
+        )
+
+        # MonteCarloRaysampler generates a random subset of 'n_rays_per_image'
+        # rays emitted from the image plane.
+        raysampler_mc = MonteCarloRaysampler(
+            min_x=-1.0,
+            max_x=1.0,
+            min_y=-1.0,
+            max_y=1.0,
+            n_rays_per_image=750,
+            n_pts_per_ray=128,
+            min_depth=0.1,
+            max_depth=volume_extent_world,
+        )
+
+        # EmissionAbsorptionRaymarcher is used to render
+        # the rays into a single 3D color vector in RGB space
+        # and an opacity scalar (corresponds to density).
+        raymarcher = EmissionAbsorptionRaymarcher()
+
+        # Create renderers
+        renderer_grid = ImplicitRenderer(raysampler=raysampler_grid, raymarcher=raymarcher)
+        renderer_mc = ImplicitRenderer(raysampler=raysampler_mc, raymarcher=raymarcher)
+
+        return renderer_grid, renderer_mc
 
     def configure_optimizer(self) -> torch.optim.Optimizer:
         optimizer = optim.Adam(self.model.parameters(), lr=self.opts.lr)

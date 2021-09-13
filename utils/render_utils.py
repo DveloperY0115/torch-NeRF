@@ -26,8 +26,6 @@ def render(W: int, H: int, K: torch.Tensor, E: torch.Tensor) -> torch.Tensor:
 
 def generate_rays(W: int, H: int, K: int, E: torch.Tensor) -> Tuple[torch.Tensor]:
     """
-    TODO: Batchfy this function!
-
     Generate rays given viewport dimensions, camera intrinsic, and camera extrinsic.
 
     Args:
@@ -95,10 +93,10 @@ def sample_points_along_rays(
     Sample coordinates where the radiance field intensities are to be evaluated.
 
     Args:
-    - rays_orig: Tensor of shape (W, H, 3) representing the origin of rays.
-    - rays_dir: Tensor of shape (W, H, 3) representing the direction of rays.
+    - rays_orig: Tensor of shape (B, W, H, 3) representing the origin of rays.
+    - rays_dir: Tensor of shape (B, W, H, 3) representing the direction of rays.
 
     Returns:
-    -
+    - sample_pts: Tensor of shape (B, W, H, num_samples, 3) representing the sampled points along each ray.
     """
     pass

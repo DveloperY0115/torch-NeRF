@@ -152,6 +152,7 @@ class NeRFTrainer(BaseTrainer):
         Returns:
         - rendered_imgs: Tensor of shape (B, C, H, W) representing a batch of rendered images.
         """
+        
         pass
 
     def initialize_renderer(

@@ -1,10 +1,11 @@
 from argparse import Namespace
-from typing import Tuple
+from typing import Coroutine, Tuple
 from tqdm import tqdm
 import wandb
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import torch.utils.data as data
 
@@ -64,12 +65,12 @@ class NeRFTrainer(BaseTrainer):
         Train the model.
         """
         for self.epoch in range(self.initial_epoch, self.opts.num_epoch):
-            _ = self.train_one_epoch()
-            _, self.validate_one_epoch()
+            train_loss = self.train_one_epoch()
+            _ = self.validate_one_epoch()
 
             print("=======================================")
             print("Epoch {}".format(self.epoch))
-            # print("Training loss: {}".format(train_loss))
+            print("Training loss: {}".format(train_loss))
             # print("Test loss: {}".format(test_loss))
             print("=======================================")
 
@@ -92,6 +93,10 @@ class NeRFTrainer(BaseTrainer):
         for idx_batch, (imgs, poses) in enumerate(
             tqdm(self.train_loader, bar_format="{l_bar}{bar:20}{r_bar}{bar:-20b}")
         ):
+            # send data to device
+            imgs = imgs.to(self.device)
+            poses = poses.to(self.device)
+            
             B = imgs.shape[0]
 
             # initialize batch of cameras
@@ -115,10 +120,14 @@ class NeRFTrainer(BaseTrainer):
             rendered_imgs_and_silhouettes, sampled_rays = self.renderer_mc(
                 cameras=cameras, volumetric_function=self.model
             )
-            rendered_imgs, _ = torch.split(rendered_imgs_and_silhouettes, [3, 1], dim=-1)
+            color_pred, _ = torch.split(rendered_imgs_and_silhouettes, [3, 1], dim=-1)
 
-            # compute L1 loss between GT and predicted image
-            colors_at_rays = 
+            # retrieve ground truth image color values but in the continuous image representation
+            sampled_pixel_xys = sampled_rays.xys
+            color_gt = self.sample_pixel_colors(imgs, sampled_pixel_xys)
+
+            # compute L1 (Huber) loss
+            loss = nn.HuberLoss(delta=0.1)(color_pred, color_gt)
 
             # back prop.
             loss.backward()
@@ -143,6 +152,7 @@ class NeRFTrainer(BaseTrainer):
         Returns:
         - rendered_imgs: Tensor of shape (B, C, H, W) representing a batch of rendered images.
         """
+        
         pass
 
     def initialize_renderer(
@@ -197,6 +207,31 @@ class NeRFTrainer(BaseTrainer):
         renderer_mc = ImplicitRenderer(raysampler=raysampler_mc, raymarcher=raymarcher)
 
         return renderer_grid, renderer_mc
+
+    def sample_pixel_colors(self, imgs: torch.Tensor, color_xys: torch.Tensor) -> torch.Tensor:
+        """
+        Sample 'imgs' given a set of continuous image coordinates
+        to obtain interpolated color values at each point in the given set.
+
+        This function is used with 'MonteCarloRaysampler' which returns
+        not the entire images, but instead only a set of pixel values computed at
+        points in continuous images.
+
+        Args:
+        - imgs:
+        - color_xys:
+
+        Returns:
+        -
+        """
+        B = imgs.shape[0]
+        C = imgs.shape[-1]
+        num_samples = color_xys.shape[1]
+
+        sampled_pixels = F.grid_sample(
+            imgs.permute(0, 3, 1, 2), -color_xys.view(B, -1, 1, 2), align_corners=True
+        )
+        return sampled_pixels.permute(0, 2, 3, 1).view(B, num_samples, C)
 
     def configure_optimizer(self) -> torch.optim.Optimizer:
         optimizer = optim.Adam(self.model.parameters(), lr=self.opts.lr)

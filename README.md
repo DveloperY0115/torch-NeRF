@@ -10,6 +10,7 @@ Pytorch implementation of **NeRF: Representing Scenes as Neural Radiance Fields 
 
 ## TODOs
 
+- [ ] Extend the implementation to [Mip-NeRF: A Multiscale Representation for Anti-Aliasing Neural Radiance Fields (ICCV 2021)](https://arxiv.org/abs/2103.13415).
 - [ ] Extend the implementation to [Block-NeRF: Scalable Large Scene Neural View Synthesis (CVPR 2022)](https://waymo.com/research/block-nerf/).
 - [ ] Extend the implementation to [Mip-NeRF 360: Unbounded 
 Anti-Aliased Neural Radiance Fields (CVPR 2022)](https://jonbarron.info/mipnerf360/).

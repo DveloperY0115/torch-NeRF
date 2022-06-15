@@ -1,106 +1,101 @@
-"""
-NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis, Ben Mildenhall et al. (ECCV 2020)
+"""Pytorch implementation of MLP used in NeRF (ECCV 2020).
 """
 
-from typing import Tuple
+from typing import Dict
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.signal_encoder.positional_encoder import NeRFPositionalEncoder
-
 
 class NeRFMLP(nn.Module):
-    def __init__(
-        self,
-        pos_dim: int = 3,
-        view_dir_dim: int = 3,
-        L_pos: int = 10,
-        L_direction: int = 4,
-    ):
-        """
-        Constructor for NeRF.
-
-        Args:
-        - pos_dim: Dimensionality of vector representing a point in space. Set to 3 by default.
-        - view_dir_dim: Dimensionality of vector representing a view direction. Set to 3 by default.
-        - L_position: Level of positional encoding for positional vectors. Set to 3 by default.
-        - L_direction: Level of positional encoding for viewing (direction) vectors.
-            Set to 3 by default (unit vector instead of spherical notaion).
-        """
+    """
+    A simple MLP used for learning neural radiance fields.
+    """
+    def __init__(self, 
+        pos_dim: int,
+        view_dir_dim: int,
+        feat_dim: int = 256) -> None:
         super().__init__()
+
+        rgb_dim = 3
+        density_dim = 1
 
         self.pos_dim = pos_dim
         self.view_dir_dim = view_dir_dim
+        self.feat_dim = feat_dim
 
-        self.L_pos = L_pos
-        self.L_direction = L_direction
+        # fully-connected layers
+        self.fc_in = nn.Linear(self.pos_dim, self.feat_dim)
+        self.fc_1 = nn.Linear(self.feat_dim, self.feat_dim)
+        self.fc_2 = nn.Linear(self.feat_dim, self.feat_dim)
+        self.fc_3 = nn.Linear(self.feat_dim, self.feat_dim)
+        self.fc_4 = nn.Linear(self.feat_dim, self.feat_dim)
+        self.fc_5 = nn.Linear(self.feat_dim + self.pos_dim, self.feat_dim)
+        self.fc_6 = nn.Linear(self.feat_dim, self.feat_dim) 
+        self.fc_7 = nn.Linear(self.feat_dim, self.feat_dim)
+        self.fc_8 = nn.Linear(self.feat_dim, self.feat_dim + density_dim)
+        self.fc_9 = nn.Linear(self.feat_dim + self.view_dir_dim, self.feat_dim // 2)
+        self.fc_out = nn.Linear(self.feat_dim // 2, rgb_dim)
 
-        # Positional encoders for each input of forward method
-        self.coord_encoder = NeRFPositionalEncoder(in_dim=3, L=self.L_pos)
-        self.direction_encoder = NeRFPositionalEncoder(in_dim=2, L=self.L_direction)
+        # activation layer
+        self.relu_actvn = nn.ReLU()
+        self.sigmoid_actvn = nn.Sigmoid()
 
-        # MLPs approximating radiance field
-        self.fc_in = nn.Linear(self.pos_dim * 2 * self.L_pos, 256)
-
-        self.fc_1 = nn.Linear(256, 256)
-        self.fc_2 = nn.Linear(256, 256)
-        self.fc_3 = nn.Linear(256, 256)
-        self.fc_4 = nn.Linear(256, 256)
-
-        self.fc_5 = nn.Linear(self.pos_dim * 2 * self.L_pos + 256, 256)
-
-        self.fc_6 = nn.Linear(256, 256)
-        self.fc_7 = nn.Linear(256, 256)
-
-        self.fc_8 = nn.Linear(256, 256 + 1)
-        self.fc_9 = nn.Linear(256 + 1 + self.view_dir_dim * 2 * self.L_direction, 128)
-
-        self.fc_out = nn.Linear(128, 3)
-
-    def forward(self, ray_bundle: RayBundle, **kwargs) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Forward propagation of NeRF.
+    def forward(self, 
+        pos: torch.Tensor, 
+        view_dir: torch.Tensor) -> Dict[torch.Tensor, torch.Tensor]:
+        """Predicts color and density.
+        
+        Given sample point coordinates and view directions,
+        predict the corresponding radiance (RGB) and density (sigma).
 
         Args:
-        - ray_bundle: RayBundle object consists of:
-            - origins: Tensor of shape (B, ..., 3) representing the origins of the rays.
-            - directions: Tensor of shape (B, ..., 3) representing the directions of the rays.
-            - lengths: Tensor of shape (B, ..., n_pts_per_ray) representing the parameters denoting
-                at which the points on rays are sampled.
-            - xys: Tensor of shape (B, ..., 2) representing the xy locations of each ray's pixel in the screen space.
-
+            pos: torch.Tensor of shape (N, self.pos_dim). Coordinates of sample points along rays.  
+            view_dir: torch.Tensor of shape (N, self.dir_dim). View direction vectors.
+        
         Returns:
-        - sigma: Tensor of shape (B, N). Tensor of density at each input point.
-        - rgb: Tensor of shape (B, N, 3). Tensor of radiance at each input point.
+            A dict containing predicted radiance (RGB) and density (sigma) at sample points.
         """
-        # TODO: Modify this function using Pytorch3D functionalities!!
-        x = ray_bundle_to_ray_points(ray_bundle)
-        n_pts_per_ray = x.shape[2]
-        d = ray_bundle.directions.unsqueeze(2).repeat(1, 1, n_pts_per_ray, 1)
+        # check input tensors
+        if (pos.ndim != 2) or (view_dir.ndim != 2):
+            raise ValueError(
+                "Expected 2D tensors. Got {}, {}-D tensors."
+                .format(pos.ndim, view_dir.ndim)
+            )
+        if pos.shape[0] != view_dir.shape[0]:
+            raise ValueError(
+                "The number of samples must match. Got {}, {}, respectively."
+                .format(pos.shape[0], pos.shape[1])
+            )
+        if pos.shape[-1] != self.pos_dim:
+            raise ValueError(
+                "Expected {}-D position vector. Got {}."
+                .format(self.pos_dim, pos.shape[-1])
+            )
+        if view_dir.shape[-1] != self.view_dir_dim:
+            raise ValueError(
+                "Expected {}-D view direction vector. Got {}."
+                .format(self.view_dir_dim, view_dir.shape[-1])
+            )
 
-        # positional encoding for inputs
-        x = self.coord_encoder.encode(x)  # (B, N, 3) -> (B, N, 2 * 3 * L_pos)
-        d = self.direction_encoder.encode(d)  # (B, N, 3) -> (B, N, 2 * 3 * L_direction)
+        x = self.relu_actvn(self.fc_in(pos))
+        x = self.relu_actvn(self.fc_1(x))
+        x = self.relu_actvn(self.fc_2(x))
+        x = self.relu_actvn(self.fc_3(x))
+        x = self.relu_actvn(self.fc_4(x))
 
-        skip = x.clone()
+        x = torch.cat([pos, x], dim=-1)
 
-        x = F.relu(self.fc_in(x))
-        x = F.relu(self.fc_1(x))
-        x = F.relu(self.fc_2(x))
-        x = F.relu(self.fc_3(x))
-        x = F.relu(self.fc_4(x))
-
-        x = torch.cat((x, skip), dim=3)
-        x = F.relu(self.fc_5(x))
-        x = F.relu(self.fc_6(x))
-        x = F.relu(self.fc_7(x))
-
+        x = self.relu_actvn(self.fc_5(x))
+        x = self.relu_actvn(self.fc_6(x))
+        x = self.relu_actvn(self.fc_7(x))
         x = self.fc_8(x)
-        sigma = x[:, :, :, 0].unsqueeze(-1)  # sigma.shape: (B, n_rays, n_pts_per_ray, 1)
-        x = torch.cat((x, d), dim=3)
-        x = F.relu(self.fc_9(x))
-        rgb = torch.sigmoid(self.fc_out(x))  # rgb.shape: (B, n_rays, n_pts_per_ray, 3)
 
-        return sigma, rgb
+        sigma = x[:, 0]
+        x = torch.cat([x[:, 1:], view_dir], dim=-1)
+
+        x = self.relu_actvn(self.fc_9(x))
+        rgb = self.sigmoid_actvn(self.fc_out(x))
+
+        return {"sigma": sigma, "rgb": rgb}

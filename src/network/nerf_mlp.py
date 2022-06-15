@@ -1,21 +1,18 @@
 """Pytorch implementation of MLP used in NeRF (ECCV 2020).
 """
 
-from typing import Dict
+import typing
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class NeRFMLP(nn.Module):
     """
     A simple MLP used for learning neural radiance fields.
     """
-    def __init__(self, 
-        pos_dim: int,
-        view_dir_dim: int,
-        feat_dim: int = 256) -> None:
+
+    def __init__(self, pos_dim: int, view_dir_dim: int, feat_dim: int = 256) -> None:
         super().__init__()
 
         rgb_dim = 3
@@ -32,7 +29,7 @@ class NeRFMLP(nn.Module):
         self.fc_3 = nn.Linear(self.feat_dim, self.feat_dim)
         self.fc_4 = nn.Linear(self.feat_dim, self.feat_dim)
         self.fc_5 = nn.Linear(self.feat_dim + self.pos_dim, self.feat_dim)
-        self.fc_6 = nn.Linear(self.feat_dim, self.feat_dim) 
+        self.fc_6 = nn.Linear(self.feat_dim, self.feat_dim)
         self.fc_7 = nn.Linear(self.feat_dim, self.feat_dim)
         self.fc_8 = nn.Linear(self.feat_dim, self.feat_dim + density_dim)
         self.fc_9 = nn.Linear(self.feat_dim + self.view_dir_dim, self.feat_dim // 2)
@@ -42,41 +39,33 @@ class NeRFMLP(nn.Module):
         self.relu_actvn = nn.ReLU()
         self.sigmoid_actvn = nn.Sigmoid()
 
-    def forward(self, 
-        pos: torch.Tensor, 
-        view_dir: torch.Tensor) -> Dict[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, pos: torch.Tensor, view_dir: torch.Tensor
+    ) -> typing.Dict[torch.Tensor, torch.Tensor]:
         """Predicts color and density.
-        
+
         Given sample point coordinates and view directions,
         predict the corresponding radiance (RGB) and density (sigma).
 
         Args:
-            pos: torch.Tensor of shape (N, self.pos_dim). Coordinates of sample points along rays.  
+            pos: torch.Tensor of shape (N, self.pos_dim). Coordinates of sample points along rays.
             view_dir: torch.Tensor of shape (N, self.dir_dim). View direction vectors.
-        
+
         Returns:
             A dict containing predicted radiance (RGB) and density (sigma) at sample points.
         """
         # check input tensors
         if (pos.ndim != 2) or (view_dir.ndim != 2):
-            raise ValueError(
-                "Expected 2D tensors. Got {}, {}-D tensors."
-                .format(pos.ndim, view_dir.ndim)
-            )
+            raise ValueError(f"Expected 2D tensors. Got {pos.ndim}, {view_dir.ndim}-D tensors.")
         if pos.shape[0] != view_dir.shape[0]:
             raise ValueError(
-                "The number of samples must match. Got {}, {}, respectively."
-                .format(pos.shape[0], pos.shape[1])
+                f"The number of samples must match. Got {pos.shape[0]} and {view_dir.shape[0]}."
             )
         if pos.shape[-1] != self.pos_dim:
-            raise ValueError(
-                "Expected {}-D position vector. Got {}."
-                .format(self.pos_dim, pos.shape[-1])
-            )
+            raise ValueError(f"Expected {self.pos_dim}-D position vector. Got {pos.shape[-1]}.")
         if view_dir.shape[-1] != self.view_dir_dim:
             raise ValueError(
-                "Expected {}-D view direction vector. Got {}."
-                .format(self.view_dir_dim, view_dir.shape[-1])
+                f"Expected {self.view_dir_dim}-D view direction vector. Got {view_dir.shape[-1]}."
             )
 
         x = self.relu_actvn(self.fc_in(pos))

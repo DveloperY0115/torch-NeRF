@@ -3,17 +3,15 @@ NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis, Ben Mild
 """
 
 from typing import Tuple
-from pytorch3d.renderer.implicit.utils import RayBundle
-from pytorch3d.renderer.implicit.utils import ray_bundle_to_ray_points
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .positional_encoder import NeRFPositionalEncoder
+from src.signal_encoder.positional_encoder import NeRFPositionalEncoder
 
 
-class NeRFCls(nn.Module):
+class NeRFMLP(nn.Module):
     def __init__(
         self,
         pos_dim: int = 3,

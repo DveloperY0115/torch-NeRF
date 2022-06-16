@@ -57,7 +57,7 @@ class VolumeRenderer(object):
 
     def _generate_screen_coords(self) -> torch.Tensor:
         """
-        Generate screen space coordinates.
+        Generates screen space coordinates.
 
         Returns:
             An instance of torch.Tensor of shape (N, 2) containing
@@ -81,20 +81,42 @@ class VolumeRenderer(object):
         coords: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Convert pixel coordinates to normalized device coordinate (NDC).
+        Converts pixel coordinates to normalized device coordinate (NDC).
 
         Args:
-            screen_coords (torch.Tensor): Tensor of shape (N, 3).
-                A collection of pixel coordinates.
+            coords (torch.Tensor): Tensor of shape (N, 2).
+                A flattened array of pixel coordinates.
 
         Returns:
             An instance of torch.Tensor of shape (N, 2) containing
             normalized device coordinates (NDCs).
         """
         coords = coords.float()
-        coords[:, 0] /= self.img_height - 1
-        coords[:, 1] /= self.img_width - 1
+        coords[:, 0] /= self.img_width - 1
+        coords[:, 1] /= self.img_height - 1
         coords = (coords - 0.5) * 2.0
+
+        return coords
+
+    def _convert_ndc_to_screen(
+        self,
+        coords: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Converts normalized device coordinates (NDCs) to pixel coordinates.
+
+        Args:
+            coords (torch.Tensor): Tensor of shape (N, 2).
+                A flattened array of normalized device coordinates.
+
+        Returns:
+            An instance of torch.Tensor of shape (N, 2) containing
+            pixel coordinates.
+        """
+        coords = 0.5 * coords + 0.5
+        coords[:, 0] *= self.img_width - 1
+        coords[:, 1] *= self.img_height - 1
+        coords = coords.long()
 
         return coords
 

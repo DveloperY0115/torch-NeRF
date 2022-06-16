@@ -94,8 +94,11 @@ class VolumeRenderer(object):
         return self._img_res
 
     @img_res.setter
-    def img_res(self, new_res) -> None:
-        if not isinstance(new_res, tuple):
+    def img_res(
+        self,
+        new_res: typing.Union[typing.Tuple, typing.List],
+    ) -> None:
+        if not (isinstance(new_res, tuple) or isinstance(new_res, list)):
             raise ValueError(f"Expected tuple. Got {type(new_res)}.")
         if len(new_res) != 2:
             raise ValueError(f"Expected tuple of length 2. Got {len(new_res)}-tuple.")
@@ -109,7 +112,10 @@ class VolumeRenderer(object):
         return self._img_height
 
     @img_height.setter
-    def img_height(self, new_height) -> None:
+    def img_height(
+        self,
+        new_height: int,
+    ) -> None:
         if not isinstance(new_height, int):
             raise ValueError(f"Expected integer as argument. Got {type(new_height)}.")
         self._img_height = new_height
@@ -120,7 +126,10 @@ class VolumeRenderer(object):
         return self._img_width
 
     @img_width.setter
-    def img_width(self, new_width) -> None:
+    def img_width(
+        self,
+        new_width: int,
+    ) -> None:
         if not isinstance(new_width, int):
             raise ValueError(f"Expected integer as argument. Got {type(new_width)}.")
         self._img_width = new_width

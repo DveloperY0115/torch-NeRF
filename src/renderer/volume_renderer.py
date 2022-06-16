@@ -54,6 +54,18 @@ class VolumeRenderer(object):
         self._img_width = img_res[1]
         self._screen_coords = self._generate_screen_coords()
 
+    def render_scene(
+        self,
+        scene: query_struct.QueryStructBase,
+    ):
+        """
+        Renders the scene by querying underlying 3D inductive bias.
+
+        Args:
+            scene (QueryStruct): An instance of class derived from 'QueryStructBase'.
+        """
+        coords = self.screen_coords.clone()
+        coords = self._convert_screen_to_ndc(coords)
 
     def _generate_screen_coords(self) -> torch.Tensor:
         """
@@ -120,6 +132,9 @@ class VolumeRenderer(object):
 
         return coords
 
+    # =============================================
+    # getters
+    # =============================================
     @property
     def camera(self) -> cameras.CameraBase:
         """Returns the current camera configuration."""
@@ -145,6 +160,19 @@ class VolumeRenderer(object):
         """Returns the current image resolution setting."""
         return self._img_res
 
+    @property
+    def img_height(self) -> int:
+        """Returns the current height of rendered images."""
+        return self._img_height
+
+    @property
+    def img_width(self) -> int:
+        """Returns the current width of rendered images."""
+        return self._img_width
+
+    # =============================================
+    # setters
+    # =============================================
     @img_res.setter
     def img_res(
         self,
@@ -159,11 +187,6 @@ class VolumeRenderer(object):
         self._img_res = new_res
         self._screen_coords = self._generate_screen_coords()  # update screen space coordinates
 
-    @property
-    def img_height(self) -> int:
-        """Returns the current height of rendered images."""
-        return self._img_height
-
     @img_height.setter
     def img_height(
         self,
@@ -173,11 +196,6 @@ class VolumeRenderer(object):
             raise ValueError(f"Expected integer as argument. Got {type(new_height)}.")
         self._img_height = new_height
         self._screen_coords = self._generate_screen_coords()  # update screen space coordinates
-
-    @property
-    def img_width(self) -> int:
-        """Returns the current width of rendered images."""
-        return self._img_width
 
     @img_width.setter
     def img_width(

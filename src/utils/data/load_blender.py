@@ -4,7 +4,7 @@ load_blender.py - Utility for loading blender scenes.
 
 import json
 import os
-from typing import Tuple, List
+import typing
 
 import cv2
 import imageio
@@ -109,46 +109,58 @@ def pose_spherical(
 
 
 def load_blender_data(
-    basedir: str, half_res: bool = False, testskip: int = 1
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, List[float], List[List]]:
+    base_dir: str,
+    half_res: bool = False,
+    test_idx_skip: int = 1,
+) -> typing.Tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    typing.List[float],
+    typing.Dict[typing.List],
+]:
     """
     Load 'synthetic blender' data.
 
     Args:
-    - basedir: Root directory of dataset to be loaded.
-    - half_res: Determines whether to halve the size of images or not. Set to 'False' by default.
-    - testskip: ??
+        base_dir (str): Root directory of dataset to be loaded.
+        half_res (bool): Determines whether to halve the size of images or not.
+            Set to 'False' by default.
+        test_idx_skip (int): Step size used for skipping some test data.
 
     Returns:
-    - imgs: Tensor of shape (B, W, H, 4) representing dataset of RGBA images.
-    - poses: Tensor of shape (B, 4, 4) representing camera-to-world transformation
-        (i.e., matrix describing the camera's orientation and translation).
-    - render_poses:  Tensor of shape (40, 4, 4) representing camera poses used for rendering.
-    - [H, W, focal]: Image height, image width, and focal length, respectively.
-    - i_split: List of lists each containing indices of training, validation, and test data, respectively.
+        imgs (torch.Tensor): Tensor of shape (B, W, H, 4).
+            Dataset of RGBA images.
+        poses (torch.Tensor): Tensor of shape (B, 4, 4).
+            Camera extrinsic matrices in camera-to-world format.
+        render_poses (torch.Tensor):  Tensor of shape (40, 4, 4).
+            Camera extrinsics used for rendering.
+        intrinsic_params (List of int): List containing image height, width, and focal length.
+        i_split (Dict of List): Dictionary of lists each containing indices
+            of training, validation, and test data.
     """
     splits = ["train", "val", "test"]
     metas = {}
 
-    for s in splits:
-        with open(os.path.join(basedir, "transforms_{}.json".format(s)), "r") as fp:
-            metas[s] = json.load(fp)
+    for split in splits:
+        with open(os.path.join(base_dir, f"transforms_{split}.json"), "r") as pose_file:
+            metas[split] = json.load(pose_file)
 
     all_imgs = []
     all_poses = []
     counts = [0]
 
-    for s in splits:
-        meta = metas[s]
+    for split in splits:
+        meta = metas[split]
         imgs = []
         poses = []
-        if s == "train" or testskip == 0:
-            skip = 1
+        if split == "train" or test_idx_skip == 0:
+            skip = 1  # do not skip any test
         else:
-            skip = testskip
+            skip = test_idx_skip
 
         for frame in meta["frames"][::skip]:
-            fname = os.path.join(basedir, frame["file_path"] + ".png")
+            fname = os.path.join(base_dir, frame["file_path"] + ".png")
             imgs.append(imageio.imread(fname))
             poses.append(np.array(frame["transform_matrix"]))
         imgs = (np.array(imgs) / 255.0).astype(np.float32)  # keep all 4 channels (RGBA)
@@ -162,23 +174,27 @@ def load_blender_data(
     imgs = np.concatenate(all_imgs, 0)
     poses = np.concatenate(all_poses, 0)
 
-    H, W = imgs[0].shape[:2]
+    # camera intrinsics
+    img_height, img_width = imgs[0].shape[:2]
     camera_angle_x = float(meta["camera_angle_x"])  # horizontal field of view (FOV)
-    focal = 0.5 * W / np.tan(0.5 * camera_angle_x)
+    focal = 0.5 * img_width / np.tan(0.5 * camera_angle_x)
+    intrinsic_params = [img_height, img_width, focal]
 
+    # camera extrinsics for image rendering
     render_poses = torch.stack(
         [pose_spherical(angle, -30.0, 4.0) for angle in np.linspace(-180, 180, 40 + 1)[:-1]], 0
     )
 
     if half_res:
-        H = H // 2
-        W = W // 2
+        img_height = img_height // 2
+        img_width = img_width // 2
         focal = focal / 2.0
 
-        imgs_half_res = np.zeros((imgs.shape[0], H, W, 4))
+        imgs_half_res = np.zeros((imgs.shape[0], img_height, img_width, 4))
         for i, img in enumerate(imgs):
-            imgs_half_res[i] = cv2.resize(img, (W, H), interpolation=cv2.INTER_AREA)
+            imgs_half_res[i] = cv2.resize(
+                img, (img_width, img_height), interpolation=cv2.INTER_AREA
+            )
         imgs = imgs_half_res
-        # imgs = tf.image.resize_area(imgs, [400, 400]).numpy()
-
-    return imgs, poses, render_poses, [H, W, focal], i_split
+\
+    return imgs, poses, render_poses, intrinsic_params, i_split

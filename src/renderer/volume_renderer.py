@@ -2,6 +2,10 @@
 Volume renderer implemented using Pytorch.
 """
 
+import typing
+
+import torch
+import src.query_struct as query_struct
 import src.renderer.cameras as cameras
 import src.renderer.integrators as integrators
 import src.renderer.ray_samplers as ray_samplers
@@ -25,6 +29,7 @@ class VolumeRenderer(object):
         camera: cameras.CameraBase,
         integrator: integrators.IntegratorBase,
         sampler: ray_samplers.RaySamplerBase,
+        img_res: typing.Tuple[int, int],
     ):
         """
         Constructor of class 'VolumeRenderer'.
@@ -36,12 +41,16 @@ class VolumeRenderer(object):
                 Computes numerical integrations to determine pixel colors in differentiable manner.
             sampler (RaySampler): An instance of class derived from 'RaySamplerBase'.
                 Samples the points in 3D space to evaluate neural scene representations.
-
+            img_res (Tuple): 2-Tuple containing height and width of rendered images.
         """
-        # Initialize fundamental components
+        # initialize fundamental components
         self._camera = camera
         self._integrator = integrator
         self._sampler = sampler
+
+        self._img_res = img_res
+        self._img_height = img_res[0]
+        self._img_width = img_res[1]
 
     @property
     def camera(self) -> cameras.CameraBase:
@@ -57,3 +66,40 @@ class VolumeRenderer(object):
     def sampler(self) -> ray_samplers.RaySamplerBase:
         """Returns the current ray sampler in-use."""
         return self._sampler
+
+    @property
+    def img_res(self) -> typing.Tuple[int, int]:
+        """Returns the current image resolution setting."""
+        return self._img_res
+
+    @img_res.setter
+    def img_res(self, new_res) -> None:
+        if not isinstance(new_res, tuple):
+            raise ValueError(f"Expected tuple. Got {type(new_res)}.")
+        if len(new_res) != 2:
+            raise ValueError(f"Expected tuple of length 2. Got {len(new_res)}-tuple.")
+        if not isinstance(new_res[0], int):
+            raise ValueError(f"Expected tuple of integers. Got tuple of {type(new_res[0])}(s).")
+        self._img_res = new_res
+
+    @property
+    def img_height(self) -> int:
+        """Returns the current height of rendered images."""
+        return self._img_height
+
+    @img_height.setter
+    def img_height(self, new_height) -> None:
+        if not isinstance(new_height, int):
+            raise ValueError(f"Expected integer as argument. Got {type(new_height)}.")
+        self._img_height = new_height
+
+    @property
+    def img_width(self) -> int:
+        """Returns the current width of rendered images."""
+        return self._img_width
+
+    @img_width.setter
+    def img_width(self, new_width) -> None:
+        if not isinstance(new_width, int):
+            raise ValueError(f"Expected integer as argument. Got {type(new_width)}.")
+        self._img_width = new_width

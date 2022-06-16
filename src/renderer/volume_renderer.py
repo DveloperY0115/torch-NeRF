@@ -57,15 +57,38 @@ class VolumeRenderer(object):
     def render_scene(
         self,
         scene: query_struct.QueryStructBase,
+        num_pixels: int,
     ):
         """
         Renders the scene by querying underlying 3D inductive bias.
 
         Args:
             scene (QueryStruct): An instance of class derived from 'QueryStructBase'.
+            num_pixels (int): Number of pixels to render.
+                If smaller than the total number of pixels in the current resolution,
+                sample pixels randomly.
         """
+        if not isinstance(num_pixels, int):
+            raise ValueError(f"Expected variable of type int. Got {type(num_pixels)}.")
+
+        # create NDCs
         coords = self.screen_coords.clone()
         coords = self._convert_screen_to_ndc(coords)
+
+        # sample pixels to render
+        if num_pixels < self.img_height * self.img_width:
+            coord_indices = torch.tensor(
+                random.sample(
+                    list(range(self.img_height * self.img_width)),
+                    num_pixels,
+                )
+            )
+        else:
+            coord_indices = torch.arange(
+                0, self.img_height * self.img_width
+            )  # render the entire image
+
+        # TODO: sample rays
 
     def _generate_screen_coords(self) -> torch.Tensor:
         """

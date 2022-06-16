@@ -52,6 +52,27 @@ class VolumeRenderer(object):
         self._img_height = img_res[0]
         self._img_width = img_res[1]
 
+    def _generate_screen_coords(self) -> torch.Tensor:
+        """
+        Generate screen space coordinates.
+
+        Returns:
+            An instance of torch.Tensor of shape (N, 2) containing
+            pixel coordinates of image whose resolution is (self.img_height, self.img_width).
+        """
+        ys = torch.arange(0, self.img_height)
+        xs = torch.arange(0, self.img_width)
+
+        grid_y, grid_x = torch.meshgrid(ys, xs, indexing="ij")
+        grid_y = (self.img_height - 1) - grid_y  # [0, H-1] -> [H-1, 0]
+
+        coords = torch.cat(
+            [grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)],
+            dim=-1,
+        ).reshape(self.img_height * self.img_width, -1)
+
+        return coords
+
     @property
     def camera(self) -> cameras.CameraBase:
         """Returns the current camera configuration."""

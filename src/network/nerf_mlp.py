@@ -1,4 +1,5 @@
-"""Pytorch implementation of MLP used in NeRF (ECCV 2020).
+"""
+Pytorch implementation of MLP used in NeRF (ECCV 2020).
 """
 
 import typing

@@ -12,28 +12,100 @@ import numpy as np
 import torch
 
 
-trans_t = lambda t: torch.Tensor([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, t], [0, 0, 0, 1]]).float()
+def translate_along_z_by(trans: float) -> torch.Tensor:
+    """
+    Creates the Affine transformation that translates a point along z-axis.
 
-rot_phi = lambda phi: torch.Tensor(
-    [
-        [1, 0, 0, 0],
-        [0, np.cos(phi), -np.sin(phi), 0],
-        [0, np.sin(phi), np.cos(phi), 0],
-        [0, 0, 0, 1],
-    ]
-).float()
+    Args:
+        trans (float): Translation offset along z-axis.
 
-rot_theta = lambda th: torch.Tensor(
-    [[np.cos(th), 0, -np.sin(th), 0], [0, 1, 0, 0], [np.sin(th), 0, np.cos(th), 0], [0, 0, 0, 1]]
-).float()
+    Returns:
+        A torch.Tensor instance of shape (4, 4) representing an Affine matrix.
+    """
+    return torch.Tensor(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, trans],
+            [0, 0, 0, 1],
+        ],
+        dtype=torch.float32,
+    )
 
 
-def pose_spherical(theta, phi, radius):
-    c2w = trans_t(radius)
-    c2w = rot_phi(phi / 180.0 * np.pi) @ c2w
-    c2w = rot_theta(theta / 180.0 * np.pi) @ c2w
-    c2w = torch.Tensor(np.array([[-1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])) @ c2w
-    return c2w
+def rotate_around_x_by(phi: float) -> torch.Tensor:
+    """
+    Creates the Affine transformation that rotates a point around x-axis.
+
+    Args:
+        phi (float): Rotation angle in degree.
+
+    Returns:
+        A torch.Tensor instance of shape (4, 4) representing an Affine matrix.
+    """
+    return torch.Tensor(
+        [
+            [1, 0, 0, 0],
+            [0, np.cos(phi), -np.sin(phi), 0],
+            [0, np.sin(phi), np.cos(phi), 0],
+            [0, 0, 0, 1],
+        ],
+        dtype=torch.float32,
+    )
+
+
+def rotate_around_y_by(theta: float):
+    """
+    Returns the Affine transformation that rotates a point around y-axis.
+
+    Args:
+        theta (float): Rotation angle in degree.
+
+    Returns:
+        A torch.Tensor instance of shape (4, 4) representing an Affine matrix.
+    """
+    return torch.Tensor(
+        [
+            [np.cos(theta), 0, -np.sin(theta), 0],
+            [0, 1, 0, 0],
+            [np.sin(theta), 0, np.cos(theta), 0],
+            [0, 0, 0, 1],
+        ],
+        dtype=torch.float32,
+    )
+
+
+def pose_spherical(
+    theta: float,
+    phi: float,
+    radius: float,
+) -> torch.Tensor:
+    """
+    Creates the camera extrinsic matrix from the given spherical coordinate.
+
+    Args:
+        theta (float): Rotation angle in degree.
+        phi (float): Rotation angle in degree.
+        radius (float):
+
+    Returns:
+        A torch.Tensor instance of shape (4, 4) representing a camera extrinsic matrix.
+    """
+    camera_to_world = translate_along_z_by(radius)
+    camera_to_world = rotate_around_x_by(phi / 180.0 * np.pi) @ camera_to_world
+    camera_to_world = rotate_around_y_by(theta / 180.0 * np.pi) @ camera_to_world
+    camera_to_world = (
+        torch.Tensor(
+            [
+                [-1, 0, 0, 0],
+                [0, 0, 1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 1],
+            ],
+        )
+        @ camera_to_world
+    )
+    return camera_to_world
 
 
 def load_blender_data(

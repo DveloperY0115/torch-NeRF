@@ -25,7 +25,7 @@ def main():
     img_res = (800, 800)
     renderer = VolumeRenderer(camera, integrator, sampler, img_res)
 
-    renderer.render_scene(None)
+    print(renderer.screen_coords.shape)
 
 
 if __name__ == "__main__":

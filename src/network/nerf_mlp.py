@@ -9,7 +9,21 @@ import torch.nn as nn
 
 class NeRFMLP(nn.Module):
     """
-    A simple MLP used for learning neural radiance fields.
+    A multi-layer perceptron (MLP) used for learning neural radiance fields.
+
+    For architecture details, please refer to 'NeRF: Representing Scenes as
+    Neural Radiance Fields for View Synthesis (ECCV 2020, Best paper honorable mention)'.
+
+    Attributes:
+        pos_dim (int): Dimensionality of coordinate vectors of sample points.
+        view_dir_dim (int): Dimensionality of view direction vectors.
+        feat_dim (int): Dimensionality of feature vector within forward propagation.
+
+    Args:
+        pos_dim (int): Dimensionality of coordinate vectors of sample points.
+        view_dir_dim (int): Dimensionality of view direction vectors.
+        feat_dim (int): Dimensionality of feature vector within forward propagation.
+            Set to 256 by default following the paper.
     """
 
     def __init__(
@@ -17,28 +31,28 @@ class NeRFMLP(nn.Module):
         pos_dim: int,
         view_dir_dim: int,
         feat_dim: int = 256,
-    ) -> None:
+    ):
         super().__init__()
 
         rgb_dim = 3
         density_dim = 1
 
-        self.pos_dim = pos_dim
-        self.view_dir_dim = view_dir_dim
-        self.feat_dim = feat_dim
+        self._pos_dim = pos_dim
+        self._view_dir_dim = view_dir_dim
+        self._feat_dim = feat_dim
 
         # fully-connected layers
-        self.fc_in = nn.Linear(self.pos_dim, self.feat_dim)
-        self.fc_1 = nn.Linear(self.feat_dim, self.feat_dim)
-        self.fc_2 = nn.Linear(self.feat_dim, self.feat_dim)
-        self.fc_3 = nn.Linear(self.feat_dim, self.feat_dim)
-        self.fc_4 = nn.Linear(self.feat_dim, self.feat_dim)
-        self.fc_5 = nn.Linear(self.feat_dim + self.pos_dim, self.feat_dim)
-        self.fc_6 = nn.Linear(self.feat_dim, self.feat_dim)
-        self.fc_7 = nn.Linear(self.feat_dim, self.feat_dim)
-        self.fc_8 = nn.Linear(self.feat_dim, self.feat_dim + density_dim)
-        self.fc_9 = nn.Linear(self.feat_dim + self.view_dir_dim, self.feat_dim // 2)
-        self.fc_out = nn.Linear(self.feat_dim // 2, rgb_dim)
+        self.fc_in = nn.Linear(self._pos_dim, self._feat_dim)
+        self.fc_1 = nn.Linear(self._feat_dim, self._feat_dim)
+        self.fc_2 = nn.Linear(self._feat_dim, self._feat_dim)
+        self.fc_3 = nn.Linear(self._feat_dim, self._feat_dim)
+        self.fc_4 = nn.Linear(self._feat_dim, self._feat_dim)
+        self.fc_5 = nn.Linear(self._feat_dim + self._pos_dim, self._feat_dim)
+        self.fc_6 = nn.Linear(self._feat_dim, self._feat_dim)
+        self.fc_7 = nn.Linear(self._feat_dim, self._feat_dim)
+        self.fc_8 = nn.Linear(self._feat_dim, self._feat_dim + density_dim)
+        self.fc_9 = nn.Linear(self._feat_dim + self._view_dir_dim, self._feat_dim // 2)
+        self.fc_out = nn.Linear(self._feat_dim // 2, rgb_dim)
 
         # activation layer
         self.relu_actvn = nn.ReLU()
@@ -55,8 +69,8 @@ class NeRFMLP(nn.Module):
         predict the corresponding radiance (RGB) and density (sigma).
 
         Args:
-            pos: torch.Tensor of shape (N, self.pos_dim). Coordinates of sample points along rays.
-            view_dir: torch.Tensor of shape (N, self.dir_dim). View direction vectors.
+            pos (torch.Tensor): Tensor of shape (N, self.pos_dim). Coordinates of sample points along rays.
+            view_dir (torch.Tensor): Tensor of shape (N, self.dir_dim). View direction vectors.
 
         Returns:
             A dict containing predicted radiance (RGB) and density (sigma) at sample points.
@@ -68,11 +82,11 @@ class NeRFMLP(nn.Module):
             raise ValueError(
                 f"The number of samples must match. Got {pos.shape[0]} and {view_dir.shape[0]}."
             )
-        if pos.shape[-1] != self.pos_dim:
-            raise ValueError(f"Expected {self.pos_dim}-D position vector. Got {pos.shape[-1]}.")
-        if view_dir.shape[-1] != self.view_dir_dim:
+        if pos.shape[-1] != self._pos_dim:
+            raise ValueError(f"Expected {self._pos_dim}-D position vector. Got {pos.shape[-1]}.")
+        if view_dir.shape[-1] != self._view_dir_dim:
             raise ValueError(
-                f"Expected {self.view_dir_dim}-D view direction vector. Got {view_dir.shape[-1]}."
+                f"Expected {self._view_dir_dim}-D view direction vector. Got {view_dir.shape[-1]}."
             )
 
         x = self.relu_actvn(self.fc_in(pos))
@@ -95,3 +109,18 @@ class NeRFMLP(nn.Module):
         rgb = self.sigmoid_actvn(self.fc_out(x))
 
         return {"sigma": sigma, "rgb": rgb}
+
+    @property
+    def pos_dim(self):
+        """Returns the acceptable dimensionality of coordinate vectors."""
+        return self._pos_dim
+
+    @property
+    def view_dir_dim(self):
+        """Returns the acceptable dimensionality of view direction vectors."""
+        return self._view_dir_dim
+
+    @property
+    def feat_dim(self):
+        """Returns the dimensionality of internal feature vectors."""
+        return self._feat_dim

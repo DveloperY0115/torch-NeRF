@@ -48,9 +48,12 @@ class VolumeRenderer(object):
         self._integrator = integrator
         self._sampler = sampler
 
+        # configure output image resolution
         self._img_res = img_res
         self._img_height = img_res[0]
         self._img_width = img_res[1]
+        self._screen_coords = self._generate_screen_coords()
+
 
     def _generate_screen_coords(self) -> torch.Tensor:
         """
@@ -89,6 +92,11 @@ class VolumeRenderer(object):
         return self._sampler
 
     @property
+    def screen_coords(self) -> torch.Tensor:
+        """Returns the tensor of screen space coordinates."""
+        return self._screen_coords
+
+    @property
     def img_res(self) -> typing.Tuple[int, int]:
         """Returns the current image resolution setting."""
         return self._img_res
@@ -98,13 +106,14 @@ class VolumeRenderer(object):
         self,
         new_res: typing.Union[typing.Tuple, typing.List],
     ) -> None:
-        if not (isinstance(new_res, tuple) or isinstance(new_res, list)):
+        if not isinstance(new_res, tuple, list):
             raise ValueError(f"Expected tuple. Got {type(new_res)}.")
         if len(new_res) != 2:
             raise ValueError(f"Expected tuple of length 2. Got {len(new_res)}-tuple.")
         if not isinstance(new_res[0], int):
             raise ValueError(f"Expected tuple of integers. Got tuple of {type(new_res[0])}(s).")
         self._img_res = new_res
+        self._screen_coords = self._generate_screen_coords()  # update screen space coordinates
 
     @property
     def img_height(self) -> int:
@@ -119,6 +128,7 @@ class VolumeRenderer(object):
         if not isinstance(new_height, int):
             raise ValueError(f"Expected integer as argument. Got {type(new_height)}.")
         self._img_height = new_height
+        self._screen_coords = self._generate_screen_coords()  # update screen space coordinates
 
     @property
     def img_width(self) -> int:
@@ -133,3 +143,4 @@ class VolumeRenderer(object):
         if not isinstance(new_width, int):
             raise ValueError(f"Expected integer as argument. Got {type(new_width)}.")
         self._img_width = new_width
+        self._screen_coords = self._generate_screen_coords()  # update screen space coordinates

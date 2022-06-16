@@ -2,23 +2,20 @@
 blender_dataset.py - Abstraction on Pytorch dataset.
 """
 
-from json import load
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.utils.data as data
 
-from .load_blender import load_blender_data
+from src.utils.data.load_blender import load_blender_data
 
 
-class BlenderDataset(data.Dataset):
-    def __init__(self, root_dir: str) -> None:
-        """
-        Abstract dataset object for 'synthetic blender' dataset.
+class NeRFBlenderDataset(data.Dataset):
+    """
+    Dataset object for loading 'synthetic blender' dataset.
 
-        Args:
-        - root_dir: Root directory of dataset to be loaded.
-        """
+    Args:
+        root_dir (str): A string indicating the root directory of the dataset.
+    """
+
+    def __init__(self, root_dir: str):
         super().__init__()
 
         (
@@ -40,7 +37,9 @@ class BlenderDataset(data.Dataset):
         print("==============================")
 
     def __len__(self):
+        """Returns the total number of data in the dataset."""
         return self.imgs.shape[0]
 
     def __getitem__(self, index):
+        """Returns the data corresponding to the given index."""
         return self.imgs[index], self.poses[index]

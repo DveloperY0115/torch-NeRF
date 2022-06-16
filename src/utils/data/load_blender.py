@@ -1,17 +1,15 @@
 """
 load_blender.py - Utility for loading blender scenes.
-
-This code is brought from 'yenchenlin/nerf-pytorch': https://github.com/yenchenlin/nerf-pytorch/blob/master/load_blender.py
 """
 
-import os
-import torch
-import numpy as np
-import imageio
 import json
+import os
 from typing import Tuple, List
-import torch.nn.functional as F
+
 import cv2
+import imageio
+import numpy as np
+import torch
 
 
 trans_t = lambda t: torch.Tensor([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, t], [0, 0, 0, 1]]).float()

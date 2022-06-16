@@ -41,7 +41,7 @@ class NeRFBlenderDataset(data.Dataset):
             )
 
         print("==============================")
-        print("[!] Loaded data successfully.")
+        print("Loaded data successfully.")
         print("==============================")
 
     def __len__(self):

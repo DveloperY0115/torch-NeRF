@@ -22,7 +22,7 @@ def translate_along_z_by(trans: float) -> torch.Tensor:
     Returns:
         A torch.Tensor instance of shape (4, 4) representing an Affine matrix.
     """
-    return torch.Tensor(
+    return torch.tensor(
         [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
@@ -43,7 +43,7 @@ def rotate_around_x_by(phi: float) -> torch.Tensor:
     Returns:
         A torch.Tensor instance of shape (4, 4) representing an Affine matrix.
     """
-    return torch.Tensor(
+    return torch.tensor(
         [
             [1, 0, 0, 0],
             [0, np.cos(phi), -np.sin(phi), 0],
@@ -64,7 +64,7 @@ def rotate_around_y_by(theta: float):
     Returns:
         A torch.Tensor instance of shape (4, 4) representing an Affine matrix.
     """
-    return torch.Tensor(
+    return torch.tensor(
         [
             [np.cos(theta), 0, -np.sin(theta), 0],
             [0, 1, 0, 0],
@@ -86,7 +86,7 @@ def pose_spherical(
     Args:
         theta (float): Rotation angle in degree.
         phi (float): Rotation angle in degree.
-        radius (float):
+        radius (float): 
 
     Returns:
         A torch.Tensor instance of shape (4, 4) representing a camera extrinsic matrix.
@@ -95,13 +95,14 @@ def pose_spherical(
     camera_to_world = rotate_around_x_by(phi / 180.0 * np.pi) @ camera_to_world
     camera_to_world = rotate_around_y_by(theta / 180.0 * np.pi) @ camera_to_world
     camera_to_world = (
-        torch.Tensor(
+        torch.tensor(
             [
                 [-1, 0, 0, 0],
                 [0, 0, 1, 0],
                 [0, 1, 0, 0],
                 [0, 0, 0, 1],
             ],
+            dtype=torch.float32,
         )
         @ camera_to_world
     )
@@ -117,7 +118,7 @@ def load_blender_data(
     torch.Tensor,
     torch.Tensor,
     typing.List[float],
-    typing.Dict[typing.List],
+    typing.Dict[str, typing.List],
 ]:
     """
     Load 'synthetic blender' data.

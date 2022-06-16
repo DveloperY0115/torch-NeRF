@@ -5,7 +5,7 @@ Camera classes used inside renderer(s).
 import torch
 
 
-class Camera(object):
+class CameraBase(object):
     """
     Basic camera class.
 

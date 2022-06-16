@@ -19,12 +19,6 @@ class NeRFMLP(nn.Module):
         pos_dim (int): Dimensionality of coordinate vectors of sample points.
         view_dir_dim (int): Dimensionality of view direction vectors.
         feat_dim (int): Dimensionality of feature vector within forward propagation.
-
-    Args:
-        pos_dim (int): Dimensionality of coordinate vectors of sample points.
-        view_dir_dim (int): Dimensionality of view direction vectors.
-        feat_dim (int): Dimensionality of feature vector within forward propagation.
-            Set to 256 by default following the paper.
     """
 
     def __init__(
@@ -33,6 +27,15 @@ class NeRFMLP(nn.Module):
         view_dir_dim: int,
         feat_dim: int = 256,
     ):
+        """
+        Constructor of class 'NeRFMLP'.
+
+        Args:
+            pos_dim (int): Dimensionality of coordinate vectors of sample points.
+            view_dir_dim (int): Dimensionality of view direction vectors.
+            feat_dim (int): Dimensionality of feature vector within forward propagation.
+                Set to 256 by default following the paper.
+        """
         super().__init__()
 
         rgb_dim = 3
@@ -64,7 +67,8 @@ class NeRFMLP(nn.Module):
         pos: torch.Tensor,
         view_dir: torch.Tensor,
     ) -> typing.Dict[torch.Tensor, torch.Tensor]:
-        """Predicts color and density.
+        """
+        Predicts color and density.
 
         Given sample point coordinates and view directions,
         predict the corresponding radiance (RGB) and density (sigma).

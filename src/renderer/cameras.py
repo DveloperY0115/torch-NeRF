@@ -12,10 +12,6 @@ class CameraBase(object):
     Attributes:
         intrinsic (torch.Tensor): Tensor of shape (4, 4) representing an intrinsic matrix.
         extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
-
-    Args:
-        intrinsic (torch.Tensor): Tensor of shape (4, 4) representing an intrinsic matrix.
-        extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
     """
 
     def __init__(
@@ -23,6 +19,14 @@ class CameraBase(object):
         intrinsic: torch.Tensor,
         extrinsic: torch.Tensor,
     ):
+        """
+        Constructor of class 'CameraBase'.
+
+        Args:
+            intrinsic (torch.Tensor): Tensor of shape (4, 4) representing an intrinsic matrix.
+            extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
+
+        """
         self._intrinsic = intrinsic
         self._extrinsic = extrinsic
 

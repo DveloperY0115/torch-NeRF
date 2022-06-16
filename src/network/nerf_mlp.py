@@ -12,7 +12,12 @@ class NeRFMLP(nn.Module):
     A simple MLP used for learning neural radiance fields.
     """
 
-    def __init__(self, pos_dim: int, view_dir_dim: int, feat_dim: int = 256) -> None:
+    def __init__(
+        self,
+        pos_dim: int,
+        view_dir_dim: int,
+        feat_dim: int = 256,
+    ) -> None:
         super().__init__()
 
         rgb_dim = 3
@@ -40,7 +45,9 @@ class NeRFMLP(nn.Module):
         self.sigmoid_actvn = nn.Sigmoid()
 
     def forward(
-        self, pos: torch.Tensor, view_dir: torch.Tensor
+        self,
+        pos: torch.Tensor,
+        view_dir: torch.Tensor,
     ) -> typing.Dict[torch.Tensor, torch.Tensor]:
         """Predicts color and density.
 

@@ -196,5 +196,5 @@ def load_blender_data(
                 img, (img_width, img_height), interpolation=cv2.INTER_AREA
             )
         imgs = imgs_half_res
-\
+
     return imgs, poses, render_poses, intrinsic_params, i_split

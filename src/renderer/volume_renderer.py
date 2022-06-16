@@ -76,6 +76,28 @@ class VolumeRenderer(object):
 
         return coords
 
+    def _convert_screen_to_ndc(
+        self,
+        coords: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Convert pixel coordinates to normalized device coordinate (NDC).
+
+        Args:
+            screen_coords (torch.Tensor): Tensor of shape (N, 3).
+                A collection of pixel coordinates.
+
+        Returns:
+            An instance of torch.Tensor of shape (N, 2) containing
+            normalized device coordinates (NDCs).
+        """
+        coords = coords.float()
+        coords[:, 0] /= self.img_height - 1
+        coords[:, 1] /= self.img_width - 1
+        coords = (coords - 0.5) * 2.0
+
+        return coords
+
     @property
     def camera(self) -> cameras.CameraBase:
         """Returns the current camera configuration."""

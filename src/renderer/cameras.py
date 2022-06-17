@@ -37,9 +37,6 @@ class CameraBase(object):
         self._t_near = t_near
         self._t_far = t_far
 
-    # =============================================
-    # getters
-    # =============================================
     @property
     def intrinsic(self) -> torch.Tensor:
         """Returns the intrinsic matrix of the camera."""
@@ -60,9 +57,6 @@ class CameraBase(object):
         """Returns the farthest depth rendered."""
         return self._t_far
 
-    # =============================================
-    # setters
-    # =============================================
     @intrinsic.setter
     def intrinsic(
         self,

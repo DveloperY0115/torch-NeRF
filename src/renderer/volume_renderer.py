@@ -112,12 +112,12 @@ class VolumeRenderer(object):
 
         return coords
 
-    def _convert_screen_to_ndc(
+    def _get_view_directions(
         self,
         coords: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Converts pixel coordinates to normalized device coordinate (NDC).
+        Compute view direction vectors represented in the camera frame.
 
         Args:
             coords (torch.Tensor): Tensor of shape (N, 2).
@@ -127,38 +127,19 @@ class VolumeRenderer(object):
             An instance of torch.Tensor of shape (N, 2) containing
             normalized device coordinates (NDCs).
         """
+        # identify camera intrinsic matrix
+        cam_intrinsic = self.camera.intrinsic
+
+        # (u, v) -> (x, y)
         coords = coords.float()
-        coords[:, 0] /= self.img_width - 1
-        coords[:, 1] /= self.img_height - 1
-        coords = (coords - 0.5) * 2.0
+        coords[:, 0] = (coords[:, 0] - cam_intrinsic[0, 2]) / cam_intrinsic[0, 0]
+        coords[:, 1] = (coords[:, 1] - cam_intrinsic[1, 2]) / cam_intrinsic[1, 1]
 
-        return coords
+        # (x, y) -> (x, y, -1)
+        view_dirs = torch.cat([coords, -torch.ones_like(coords[:, 0])], dim=-1)
 
-    def _convert_ndc_to_screen(
-        self,
-        coords: torch.Tensor,
-    ) -> torch.Tensor:
-        """
-        Converts normalized device coordinates (NDCs) to pixel coordinates.
+        return view_dirs
 
-        Args:
-            coords (torch.Tensor): Tensor of shape (N, 2).
-                A flattened array of normalized device coordinates.
-
-        Returns:
-            An instance of torch.Tensor of shape (N, 2) containing
-            pixel coordinates.
-        """
-        coords = 0.5 * coords + 0.5
-        coords[:, 0] *= self.img_width - 1
-        coords[:, 1] *= self.img_height - 1
-        coords = coords.long()
-
-        return coords
-
-    # =============================================
-    # getters
-    # =============================================
     @property
     def camera(self) -> cameras.CameraBase:
         """Returns the current camera configuration."""
@@ -194,9 +175,6 @@ class VolumeRenderer(object):
         """Returns the current width of rendered images."""
         return self._img_width
 
-    # =============================================
-    # setters
-    # =============================================
     @img_res.setter
     def img_res(
         self,

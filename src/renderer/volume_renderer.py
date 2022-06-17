@@ -2,6 +2,7 @@
 Volume renderer implemented using Pytorch.
 """
 
+import random
 import typing
 
 import torch

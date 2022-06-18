@@ -20,7 +20,7 @@ class RaySamplerBase(object):
         cam_extrinsic: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Compute view direction vectors represented in the camera frame.
+        Computes view direction vectors represented in the world frame.
 
         Args:
             pixel_coords (torch.Tensor): Tensor of shape (N, 2).
@@ -47,6 +47,22 @@ class RaySamplerBase(object):
 
         return ray_dir
 
+    def _get_ray_origin(
+        self,
+        cam_extrinsic: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Computes ray origin coordinate in the world frame.
+
+        Args:
+            cam_extrinsic (torch.Tensor): Tensor of shape (4, 4).
+                A camera extrinsic matrix.
+
+        Returns:
+            An instance of torch.Tensor of shape (3,) representing
+            the origin of the camera in the world frame.
+        """
+        return cam_extrinsic[:3, -1]
         """
         Sample rays.
         """

@@ -12,16 +12,16 @@ class CameraBase(object):
     Attributes:
         intrinsic (torch.Tensor): Tensor of shape (4, 4) representing an intrinsic matrix.
         extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
-        t_near (float): A floating point number representing the nearest depth rendered.
-        t_far (float): A floating point number representing the farthest depth rendered.
+        z_near (float): A floating point number representing the nearest depth rendered.
+        z_far (float): A floating point number representing the farthest depth rendered.
     """
 
     def __init__(
         self,
         intrinsic: torch.Tensor,
         extrinsic: torch.Tensor,
-        t_near: float,
-        t_far: float,
+        z_near: float,
+        z_far: float,
     ):
         """
         Constructor of class 'CameraBase'.
@@ -29,13 +29,13 @@ class CameraBase(object):
         Args:
             intrinsic (torch.Tensor): Tensor of shape (4, 4) representing an intrinsic matrix.
             extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
-            t_near (float): A floating point number representing the nearest depth rendered.
-            t_far (float): A floating point number representing the farthest depth rendered.
+            z_near (float): A floating point number representing the nearest depth rendered.
+            z_far (float): A floating point number representing the farthest depth rendered.
         """
         self._intrinsic = intrinsic
         self._extrinsic = extrinsic
-        self._t_near = t_near
-        self._t_far = t_far
+        self._z_near = z_near
+        self._z_far = z_far
 
     @property
     def intrinsic(self) -> torch.Tensor:
@@ -48,14 +48,14 @@ class CameraBase(object):
         return self._extrinsic
 
     @property
-    def t_near(self) -> float:
+    def z_near(self) -> float:
         """Returns the nearest depth rendered."""
-        return self._t_near
+        return self._z_near
 
     @property
-    def t_far(self) -> float:
+    def z_far(self) -> float:
         """Returns the farthest depth rendered."""
-        return self._t_far
+        return self._z_far
 
     @intrinsic.setter
     def intrinsic(
@@ -79,20 +79,20 @@ class CameraBase(object):
             raise ValueError(f"Expected tensor of shape (4, 4). Got {new_extrinsic.shape}.")
         self._extrinsic = new_extrinsic
 
-    @t_near.setter
-    def t_near(
+    @z_near.setter
+    def z_near(
         self,
-        new_t_near: float,
+        new_z_near: float,
     ) -> None:
-        if not isinstance(new_t_near, int, float):
-            raise ValueError(f"Expected variable of numeric type. Got {type(new_t_near)}.")
-        self._t_near = new_t_near
+        if not isinstance(new_z_near, int, float):
+            raise ValueError(f"Expected variable of numeric type. Got {type(new_z_near)}.")
+        self._z_near = new_z_near
 
-    @t_far.setter
-    def t_far(
+    @z_far.setter
+    def z_far(
         self,
-        new_t_far: float,
+        new_z_far: float,
     ) -> None:
-        if not isinstance(new_t_far, int, float):
-            raise ValueError(f"Expected variable of numeric type. Got {type(new_t_far)}.")
-        self._t_far = new_t_far
+        if not isinstance(new_z_far, int, float):
+            raise ValueError(f"Expected variable of numeric type. Got {type(new_z_far)}.")
+        self._z_far = new_z_far

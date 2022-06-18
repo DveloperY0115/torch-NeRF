@@ -173,10 +173,6 @@ class RaySamplerBase(object):
         if z_near <= 0:
             raise ValueError(f"Expected a positive real number. Got {z_near}.")
 
-        # shift ray origins to the near plane at z = -z_near
-        t_near = -(z_near + ray_origin[:, 2]) / ray_dir[:, 2]
-        ray_origin = ray_origin + t_near * ray_dir
-
         # project the ray origin
         origin_x = -(2 * focal_length / img_width) * (ray_origin[:, 0] / ray_origin[:, 2])
         origin_y = -(2 * focal_length / img_height) * (ray_origin[:, 1] / ray_origin[:, 2])

@@ -3,7 +3,6 @@ Volume renderer implemented using Pytorch.
 """
 
 import random
-import typing
 
 import torch
 import src.query_struct as query_struct
@@ -89,27 +88,9 @@ class VolumeRenderer(object):
         coords = coords[pixel_to_render, :]
         ray_origin, ray_dir = self.sampler.generate_rays(
             coords,
-            self.camera.intrinsic,
-            self.camera.extrinsic,
+            self.camera,
+            project_to_ndc=True,
         )
-
-        # project rays to NDC if requested
-        if project_to_ndc:
-            focal_lengths = self.camera.focal_lengths
-            if focal_lengths[0] != focal_lengths[1]:
-                raise ValueError(
-                    "Focal length used for computing NDC is ambiguous."
-                    f"Two different focal lengths ({focal_lengths[0]}, {focal_lengths[1]}) "
-                    "exists but only one can be used."
-                )
-            ray_origin, ray_dir = self.sampler.map_rays_to_ndc(
-                focal_lengths[0],
-                self.camera.z_near,
-                self.camera.img_height,
-                self.camera.img_width,
-                ray_origin,
-                ray_dir,
-            )
 
         # sample points along rays
 

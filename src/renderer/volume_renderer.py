@@ -54,6 +54,7 @@ class VolumeRenderer(object):
         self,
         scene: query_struct.QueryStructBase,
         num_pixels: int,
+        project_to_ndc: bool,
     ):
         """
         Renders the scene by querying underlying 3D inductive bias.
@@ -85,11 +86,32 @@ class VolumeRenderer(object):
 
         # generate sample points along rays
         coords = self.screen_coords.clone()
+        coords = coords[pixel_to_render, :]
         ray_origin, ray_dir = self.sampler.generate_rays(
             coords,
             self.camera.intrinsic,
             self.camera.extrinsic,
         )
+
+        # project rays to NDC if requested
+        if project_to_ndc:
+            focal_lengths = self.camera.focal_lengths
+            if focal_lengths[0] != focal_lengths[1]:
+                raise ValueError(
+                    "Focal length used for computing NDC is ambiguous."
+                    f"Two different focal lengths ({focal_lengths[0]}, {focal_lengths[1]}) "
+                    "exists but only one can be used."
+                )
+            ray_origin, ray_dir = self.sampler.map_rays_to_ndc(
+                focal_lengths[0],
+                self.camera.z_near,
+                self.camera.img_height,
+                self.camera.img_width,
+                ray_origin,
+                ray_dir,
+            )
+
+        # sample points along rays
 
     def _generate_screen_coords(self) -> torch.Tensor:
         """

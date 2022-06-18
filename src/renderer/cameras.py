@@ -2,6 +2,8 @@
 Camera classes used inside renderer(s).
 """
 
+import typing
+
 import torch
 
 
@@ -14,10 +16,12 @@ class CameraBase(object):
         extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
         z_near (float): A floating point number representing the nearest depth rendered.
         z_far (float): A floating point number representing the farthest depth rendered.
+        focal_lengths (tuple): Focal length(s) of the camera.
     """
 
     def __init__(
         self,
+        focal_lengths: typing.Tuple[float, float],
         intrinsic: torch.Tensor,
         extrinsic: torch.Tensor,
         z_near: float,
@@ -31,11 +35,13 @@ class CameraBase(object):
             extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
             z_near (float): A floating point number representing the nearest depth rendered.
             z_far (float): A floating point number representing the farthest depth rendered.
+            focal_lengths (tuple): Focal length(s) of the camera.
         """
         self._intrinsic = intrinsic
         self._extrinsic = extrinsic
         self._z_near = z_near
         self._z_far = z_far
+        self._focal_lengths = focal_lengths
 
     @property
     def intrinsic(self) -> torch.Tensor:
@@ -56,6 +62,11 @@ class CameraBase(object):
     def z_far(self) -> float:
         """Returns the farthest depth rendered."""
         return self._z_far
+
+    @property
+    def focal_lengths(self) -> typing.Tuple[float, float]:
+        """Returns the focal lengths of the camera."""
+        return self._focal_lengths
 
     @intrinsic.setter
     def intrinsic(
@@ -86,7 +97,7 @@ class CameraBase(object):
     ) -> None:
         if not isinstance(new_z_near, int, float):
             raise ValueError(f"Expected variable of numeric type. Got {type(new_z_near)}.")
-        self._z_near = new_z_near
+        self._z_near = float(new_z_near)
 
     @z_far.setter
     def z_far(
@@ -95,4 +106,19 @@ class CameraBase(object):
     ) -> None:
         if not isinstance(new_z_far, int, float):
             raise ValueError(f"Expected variable of numeric type. Got {type(new_z_far)}.")
-        self._z_far = new_z_far
+        self._z_far = float(new_z_far)
+
+    @focal_lengths.setter
+    def focal_lengths(
+        self,
+        new_focal_lengths: typing.Tuple[float, float],
+    ) -> None:
+        if not isinstance(new_focal_lengths, tuple, list):
+            raise ValueError(
+                f"Expected a tuple or list as a parameter. Got {type(new_focal_lengths)}."
+            )
+        if not isinstance(new_focal_lengths[0], float):
+            raise ValueError(
+                f"Expected variable of numeric type. Got {type(new_focal_lengths[0])}."
+            )
+        self._focal_lengths = (float(f) for f in new_focal_lengths)

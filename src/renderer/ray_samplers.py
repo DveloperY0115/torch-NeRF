@@ -85,6 +85,7 @@ class RaySamplerBase(object):
     def generate_rays(
         self,
         pixel_coords: torch.Tensor,
+        z_near: float,
         cam_intrinsic: torch.Tensor,
         cam_extrinsic: torch.Tensor,
     ) -> typing.Tuple[torch.Tensor, torch.Tensor]:
@@ -107,8 +108,13 @@ class RaySamplerBase(object):
             ray_dir (torch.Tensor): Tensor of shape (N, 3).
                 Ray direction vectors in the world frame.
         """
-        ray_dir = self._get_ray_directions(pixel_coords, cam_intrinsic, cam_extrinsic)
-        ray_origin = self._get_ray_origin(cam_extrinsic).expand(ray_dir.shape)
+        # generate ray direction vectors, origin coordinates in the camera frame.
+        ray_dir = self._get_ray_directions(pixel_coords, cam_intrinsic)
+        ray_origin = self._get_ray_origin(z_near, ray_dir)
+
+        # transform the coordinates and vectors into the world frame
+        ray_dir = ray_dir @ cam_extrinsic[:3, :3]
+        ray_origin = ray_origin + cam_extrinsic[:3, -1]
 
         return ray_origin, ray_dir
 

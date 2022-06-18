@@ -78,9 +78,8 @@ class RaySamplerBase(object):
     def generate_rays(
         self,
         pixel_coords: torch.Tensor,
-        z_near: float,
-        cam_intrinsic: torch.Tensor,
-        cam_extrinsic: torch.Tensor,
+        camera: cameras.CameraBase,
+        project_to_ndc: bool,
     ) -> typing.Tuple[torch.Tensor, torch.Tensor]:
         """
         Generate rays by computing:
@@ -90,10 +89,6 @@ class RaySamplerBase(object):
         Args:
             pixel_coords (torch.Tensor): Tensor of shape (N, 2).
                 A flattened array of pixel coordinates.
-            cam_intrinsic (torch.Tensor): Tensor of shape (4, 4).
-                A camera intrinsic matrix.
-            cam_extrinsic (torch.Tensor): Tensor of shape (4, 4).
-                A camera extrinsic matrix.
 
         Returns:
             ray_origin (torch.Tensor): Tensor of shape (N, 3).
@@ -102,12 +97,43 @@ class RaySamplerBase(object):
                 Ray direction vectors in the world frame.
         """
         # generate ray direction vectors, origin coordinates in the camera frame.
-        ray_dir = self._get_ray_directions(pixel_coords, cam_intrinsic)
-        ray_origin = self._get_ray_origin(z_near, ray_dir)
+        ray_dir = self._get_ray_directions(pixel_coords, camera.intrinsic)
+        ray_origin = self._get_ray_origin(
+            camera.z_near,
+            ray_dir,
+            translate_to_pixel=True,
+        )
+        ray_dir /= torch.linalg.vector_norm(
+            ray_dir,
+            ord=2,
+            dim=-1,
+            keepdim=True,
+        )
+
+        # project rays to NDC if requested
+        #  NOTE: Although the supplementary material of the paper explains that
+        #  NDC transformation is applied to coordinates & vectors lying in the "camera" frame,
+        #  the official implementation applies this to the vectors in the "world" frame.
+        if project_to_ndc:
+            focal_lengths = camera.focal_lengths
+            if focal_lengths[0] != focal_lengths[1]:
+                raise ValueError(
+                    "Focal length used for computing NDC is ambiguous."
+                    f"Two different focal lengths ({focal_lengths[0]}, {focal_lengths[1]}) "
+                    "exists but only one can be used."
+                )
+            ray_origin, ray_dir = self.map_rays_to_ndc(
+                focal_lengths[0],
+                camera.z_near,
+                camera.img_height,
+                camera.img_width,
+                ray_origin,
+                ray_dir,
+            )
 
         # transform the coordinates and vectors into the world frame
-        ray_dir = ray_dir @ cam_extrinsic[:3, :3]
-        ray_origin = ray_origin + cam_extrinsic[:3, -1]
+        ray_dir = ray_dir @ camera.extrinsic[:3, :3]
+        ray_origin = ray_origin + camera.extrinsic[:3, -1]
 
         return ray_origin, ray_dir
 

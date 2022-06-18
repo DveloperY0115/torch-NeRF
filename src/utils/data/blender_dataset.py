@@ -13,20 +13,41 @@ class NeRFBlenderDataset(data.Dataset):
     """
     Dataset object for loading 'synthetic blender' dataset.
 
-    Args:
+    Attributes:
         root_dir (str): A string indicating the root directory of the dataset.
+        dataset_type (str): A string indicating the type of the dataset.
     """
 
-    def __init__(self, root_dir: str):
+    def __init__(
+        self,
+        root_dir: str,
+        dataset_type: str,
+    ):
+        """
+        Constructor of 'NeRFBlenderDataset'.
+
+        Args:
+            root_dir (str): A string indicating the root directory of the dataset.
+            dataset_type (str): A string indicating the type of the dataset.
+        """
+        # check arguments
+        dataset_types = ["train", "val", "test"]
+        if not dataset_type in dataset_types:
+            raise ValueError(
+                f"Unsupported dataset type. Expected one of {dataset_types}. Got {dataset_type}"
+            )
+
         super().__init__()
+
+        self._root_dir = root_dir
+        self._dataset_type = dataset_type
 
         (
             self._imgs,
             self._poses,
-            self._render_poses,
             self._camera_params,
-            self._i_split,
-        ) = load_blender_data(root_dir)
+            self._render_poses,
+        ) = load_blender_data(root_dir, dataset_type)
 
         self._img_height = self._camera_params[0]
         self._img_width = self._camera_params[1]
@@ -41,7 +62,10 @@ class NeRFBlenderDataset(data.Dataset):
             )
 
         print("==============================")
-        print("Loaded data successfully.")
+        print("Loaded dataset successfully.")
+        print(f"Number of training data: {self._imgs.shape[0]}")
+        print(f"Image resolution: ({self._img_height}, {self.img_width})")
+        print(f"Focal length(s): ({self._focal_length}, {self._focal_length})")
         print("==============================")
 
     def __len__(self):

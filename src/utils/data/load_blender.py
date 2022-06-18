@@ -86,7 +86,7 @@ def pose_spherical(
     Args:
         theta (float): Rotation angle in degree.
         phi (float): Rotation angle in degree.
-        radius (float): 
+        radius (float): Radius of the camera trajectory orbitting around the origin.
 
     Returns:
         A torch.Tensor instance of shape (4, 4) representing a camera extrinsic matrix.
@@ -111,6 +111,7 @@ def pose_spherical(
 
 def load_blender_data(
     base_dir: str,
+    dataset_type: str,
     half_res: bool = False,
     test_idx_skip: int = 1,
 ) -> typing.Tuple[
@@ -125,6 +126,7 @@ def load_blender_data(
 
     Args:
         base_dir (str): Root directory of dataset to be loaded.
+        dataset_type (str): Type of the dataset. Can be 'train', 'test', 'val'.
         half_res (bool): Determines whether to halve the size of images or not.
             Set to 'False' by default.
         test_idx_skip (int): Step size used for skipping some test data.
@@ -140,40 +142,32 @@ def load_blender_data(
         i_split (Dict of List): Dictionary of lists each containing indices
             of training, validation, and test data.
     """
-    splits = ["train", "val", "test"]
-    metas = {}
+    dataset_types = ["train", "val", "test"]
 
-    for split in splits:
-        with open(os.path.join(base_dir, f"transforms_{split}.json"), "r") as pose_file:
-            metas[split] = json.load(pose_file)
+    if not dataset_type in dataset_types:
+        raise ValueError(
+            f"Unsupported dataset type. Expected one of {dataset_types}. Got {dataset_type}"
+        )
 
-    all_imgs = []
-    all_poses = []
-    counts = [0]
+    with open(os.path.join(base_dir, f"transforms_{dataset_type}.json"), "r") as pose_file:
+        meta = json.load(pose_file)
 
-    for split in splits:
-        meta = metas[split]
-        imgs = []
-        poses = []
-        if split == "train" or test_idx_skip == 0:
-            skip = 1  # do not skip any test
-        else:
-            skip = test_idx_skip
+    imgs = []
+    poses = []
 
-        for frame in meta["frames"][::skip]:
-            fname = os.path.join(base_dir, frame["file_path"] + ".png")
-            imgs.append(imageio.imread(fname))
-            poses.append(np.array(frame["transform_matrix"]))
-        imgs = (np.array(imgs) / 255.0).astype(np.float32)  # keep all 4 channels (RGBA)
-        poses = np.array(poses).astype(np.float32)
-        counts.append(counts[-1] + imgs.shape[0])  # accumulate the number of images read
-        all_imgs.append(imgs)
-        all_poses.append(poses)
+    imgs = []
+    poses = []
+    if dataset_type == "train" or test_idx_skip == 0:
+        skip = 1  # do not skip any test
+    else:
+        skip = test_idx_skip
 
-    i_split = [np.arange(counts[i], counts[i + 1]) for i in range(3)]
-
-    imgs = np.concatenate(all_imgs, 0)
-    poses = np.concatenate(all_poses, 0)
+    for frame in meta["frames"][::skip]:
+        fname = os.path.join(base_dir, frame["file_path"] + ".png")
+        imgs.append(imageio.imread(fname))
+        poses.append(np.array(frame["transform_matrix"]))
+    imgs = (np.array(imgs) / 255.0).astype(np.float32)
+    poses = np.array(poses).astype(np.float32)
 
     # camera intrinsics
     img_height, img_width = imgs[0].shape[:2]
@@ -198,4 +192,4 @@ def load_blender_data(
             )
         imgs = imgs_half_res
 
-    return imgs, poses, render_poses, intrinsic_params, i_split
+    return imgs, poses, intrinsic_params, render_poses

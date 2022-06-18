@@ -19,6 +19,10 @@ class CameraBase(object):
         extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
         z_near (float): A floating point number representing the nearest depth rendered.
         z_far (float): A floating point number representing the farthest depth rendered.
+        focal_lengths (tuple): A 2-tuple of floating point numbers representing the
+            focal length of the horizontal axis, vertical axis, respectively.
+        img_width (int): Width of the image.
+        img_height (int): Height of the image.
     """
 
     def __init__(
@@ -55,8 +59,8 @@ class CameraBase(object):
                 raise ValueError(f"Expected a tensor of shape (4, 4). Got {intrinsic.shape}.")
             self._intrinsic = intrinsic
 
-            self._focal_x = intrinsic[0, 0]
-            self._focal_y = intrinsic[1, 1]
+            self._focal_x = float(intrinsic[0, 0])
+            self._focal_y = float(intrinsic[1, 1])
             self._img_width = int(2 * intrinsic[0, 2])
             self._img_height = int(2 * intrinsic[1, 2])
         else:
@@ -74,10 +78,10 @@ class CameraBase(object):
                 z_far,
             )
 
-            self._focal_x = focal_x
-            self._focal_y = focal_y
-            self._img_width = img_width
-            self._img_height = img_height
+            self._focal_x = float(focal_x)
+            self._focal_y = float(focal_y)
+            self._img_width = int(img_width)
+            self._img_height = int(img_height)
 
     def _construct_intrinsic_from_params(
         self,
@@ -145,9 +149,19 @@ class CameraBase(object):
         return self._z_far
 
     @property
+    def img_width(self) -> int:
+        """Returns the width of the image."""
+        return self._img_width
+
+    @property
+    def img_height(self) -> int:
+        """Returns the height of the image."""
+        return self._img_height
+
+    @property
     def focal_lengths(self) -> typing.Tuple[float, float]:
         """Returns the focal lengths of the camera."""
-        return self._focal_lengths
+        return (self._focal_x, self._focal_y)
 
     @intrinsic.setter
     def intrinsic(
@@ -189,6 +203,7 @@ class CameraBase(object):
             raise ValueError(f"Expected variable of numeric type. Got {type(new_z_far)}.")
         self._z_far = float(new_z_far)
 
+    """
     @focal_lengths.setter
     def focal_lengths(
         self,
@@ -203,3 +218,4 @@ class CameraBase(object):
                 f"Expected variable of numeric type. Got {type(new_focal_lengths[0])}."
             )
         self._focal_lengths = (float(f) for f in new_focal_lengths)
+    """

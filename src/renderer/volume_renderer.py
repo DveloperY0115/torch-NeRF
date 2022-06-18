@@ -112,34 +112,6 @@ class VolumeRenderer(object):
 
         return coords
 
-    def _get_view_directions(
-        self,
-        coords: torch.Tensor,
-    ) -> torch.Tensor:
-        """
-        Compute view direction vectors represented in the camera frame.
-
-        Args:
-            coords (torch.Tensor): Tensor of shape (N, 2).
-                A flattened array of pixel coordinates.
-
-        Returns:
-            An instance of torch.Tensor of shape (N, 2) containing
-            normalized device coordinates (NDCs).
-        """
-        # identify camera intrinsic matrix
-        cam_intrinsic = self.camera.intrinsic
-
-        # (u, v) -> (x, y)
-        coords = coords.float()
-        coords[:, 0] = (coords[:, 0] - cam_intrinsic[0, 2]) / cam_intrinsic[0, 0]
-        coords[:, 1] = (coords[:, 1] - cam_intrinsic[1, 2]) / cam_intrinsic[1, 1]
-
-        # (x, y) -> (x, y, -1)
-        view_dirs = torch.cat([coords, -torch.ones_like(coords[:, 0])], dim=-1)
-
-        return view_dirs
-
     @property
     def camera(self) -> cameras.CameraBase:
         """Returns the current camera configuration."""

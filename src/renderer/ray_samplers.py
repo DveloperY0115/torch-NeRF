@@ -62,7 +62,8 @@ class RaySamplerBase(object):
 
     def _get_ray_origin(
         self,
-        cam_extrinsic: torch.Tensor,
+        z_near: float,
+        ray_dir: torch.Tensor,
     ) -> torch.Tensor:
         """
         Computes ray origin coordinate in the world frame.
@@ -73,9 +74,13 @@ class RaySamplerBase(object):
 
         Returns:
             An instance of torch.Tensor of shape (3,) representing
-            the origin of the camera in the world frame.
+            the origin of the camera in the camera frame.
         """
-        return cam_extrinsic[:3, -1]
+        # ray starts from the pixel centers on the near plane
+        t_near = (-(z_near) / ray_dir[:, 2]).unsqueeze(-1)
+        ray_origin = t_near * ray_dir
+
+        return ray_origin
 
     def generate_rays(
         self,

@@ -44,7 +44,7 @@ class CameraBase(object):
             z_near (float): A floating point number representing the nearest depth rendered.
             z_far (float): A floating point number representing the farthest depth rendered.
         """
-        if not isinstance(intrinsic, torch.Tensor, dict):
+        if not isinstance(intrinsic, (torch.Tensor, dict)):
             raise ValueError(
                 "Expected torch.Tensor of Python Dict as a camera intrinsic. "
                 f"Got {type(intrinsic)}."

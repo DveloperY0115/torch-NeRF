@@ -100,10 +100,74 @@ class RaySamplerBase(object):
             ray_origin (torch.Tensor): Tensor of shape (N, 3).
                 Coordinates of ray origins in the world frame.
             ray_dir (torch.Tensor): Tensor of shape (N, 3).
-
+                Ray direction vectors in the world frame.
         """
         ray_dir = self._get_ray_directions(pixel_coords, cam_intrinsic, cam_extrinsic)
         ray_origin = self._get_ray_origin(cam_extrinsic).expand(ray_dir.shape)
 
         return ray_origin, ray_dir
+
+    def map_rays_to_ndc(
+        self,
+        focal_length: float,
+        z_near: float,
+        img_height: int,
+        img_width: int,
+        ray_origin: torch.Tensor,
+        ray_dir: torch.Tensor,
+    ) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Projects ray origin, directions in the world frame to NDC.
+
+        For details regarding mathematical derivation of the projection,
+        please refer to the supplementary material of 'NeRF: Representing Scenes as
+        Neural Radiance Fields for View Synthesis (ECCV 2020, Best paper
+        honorable mention)'.
+
+        Args:
+            focal_length (float): A focal length of the camera.
+            z_near (float): The nearest depth of the view frustum.
+            img_height (int): The height of the rendered image.
+            img_width (int): The width of the rendered image.
+            ray_origin (torch.Tensor): Tensor of shape (N, 3).
+                Coordinates of ray origins in the world frame.
+            ray_dir (torch.Tensor): Tensor of shape (N, 3).
+                Ray direction vectors in the world frame.
+
+        Returns:
+            projected_origin (torch.Tensor): Tensor of shape (N, 3).
+                Coordinates of ray origins in NDC.
+            projected_dir (torch.Tensor): Tensor of shape (N, 3).
+                Ray direction vectors in NDC.
+        """
+        if z_near <= 0:
+            raise ValueError(f"Expected a positive real number. Got {z_near}.")
+
+        # shift ray origins to the near plane at z = -z_near
+        t_near = -(z_near + ray_origin[:, 2]) / ray_dir[:, 2]
+        ray_origin = ray_origin + t_near * ray_dir
+
+        # project the ray origin
+        origin_x = -(2 * focal_length / img_width) * (ray_origin[:, 0] / ray_origin[:, 2])
+        origin_y = -(2 * focal_length / img_height) * (ray_origin[:, 1] / ray_origin[:, 2])
+        origin_z = 1 + (2 * z_near / ray_origin[:, 2])
+        projected_origin = torch.stack(
+            [origin_x, origin_y, origin_z],
+            dim=-1,
+        )
+
+        # project the ray directions
+        dir_x = -(2 * focal_length / img_width) * (
+            (ray_dir[:, 0] / ray_dir[:, 2]) - (ray_origin[:, 0] / ray_origin[:, 2])
+        )
+        dir_y = -(2 * focal_length / img_height) * (
+            (ray_dir[:, 1] / ray_dir[:, 2]) - (ray_origin[:, 1] / ray_origin[:, 2])
+        )
+        dir_z = -(2 * z_near / ray_origin[:, 2])
+        projected_dir = torch.stack(
+            [dir_x, dir_y, dir_z],
+            dim=-1,
+        )
+
+        return projected_origin, projected_dir
 

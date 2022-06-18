@@ -2,6 +2,8 @@
 Ray samplers for sampling rays used for volume rendering.
 """
 
+import typing
+
 import torch
 
 
@@ -63,7 +65,34 @@ class RaySamplerBase(object):
             the origin of the camera in the world frame.
         """
         return cam_extrinsic[:3, -1]
+
+    def generate_rays(
+        self,
+        pixel_coords: torch.Tensor,
+        cam_intrinsic: torch.Tensor,
+        cam_extrinsic: torch.Tensor,
+    ) -> typing.Tuple[torch.Tensor, torch.Tensor]:
         """
-        Sample rays.
+        Generate rays by computing:
+            (1) the coordinate of rays' origin;
+            (2) the directions of rays;
+
+        Args:
+            pixel_coords (torch.Tensor): Tensor of shape (N, 2).
+                A flattened array of pixel coordinates.
+            cam_intrinsic (torch.Tensor): Tensor of shape (4, 4).
+                A camera intrinsic matrix.
+            cam_extrinsic (torch.Tensor): Tensor of shape (4, 4).
+                A camera extrinsic matrix.
+
+        Returns:
+            ray_origin (torch.Tensor): Tensor of shape (N, 3).
+                Coordinates of ray origins in the world frame.
+            ray_dir (torch.Tensor): Tensor of shape (N, 3).
+
         """
-        raise NotImplementedError()
+        ray_dir = self._get_ray_directions(pixel_coords, cam_intrinsic, cam_extrinsic)
+        ray_origin = self._get_ray_origin(cam_extrinsic).expand(ray_dir.shape)
+
+        return ray_origin, ray_dir
+

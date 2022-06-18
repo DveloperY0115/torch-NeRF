@@ -47,6 +47,9 @@ class RaySamplerBase(object):
         # rotate vectors in (local) camera frame to the (global) world frame
         ray_dir = ray_dir @ cam_extrinsic[:3, :3]
 
+        # normalize vectors
+        ray_dir /= torch.linalg.vector_norm(ray_dir, ord=2, dim=-1)
+
         return ray_dir
 
     def _get_ray_origin(

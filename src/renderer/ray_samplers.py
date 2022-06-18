@@ -5,6 +5,7 @@ Ray samplers for sampling rays used for volume rendering.
 import typing
 
 import torch
+import src.renderer.cameras as cameras
 
 
 class RaySamplerBase(object):
@@ -19,7 +20,6 @@ class RaySamplerBase(object):
         self,
         pixel_coords: torch.Tensor,
         cam_intrinsic: torch.Tensor,
-        normalize: bool = False,
     ) -> torch.Tensor:
         """
         Computes view direction vectors represented in the camera frame.
@@ -29,8 +29,6 @@ class RaySamplerBase(object):
                 A flattened array of pixel coordinates.
             cam_intrinsic (torch.Tensor): Tensor of shape (4, 4).
                 A camera intrinsic matrix.
-            normalize (bool). A flag for normalizing resulting vectors.
-                If true, normalize ray direction vectors to make them unit vectors.
 
         Returns:
             An instance of torch.Tensor of shape (N, 3) containing
@@ -49,14 +47,6 @@ class RaySamplerBase(object):
             ],
             dim=-1,
         )
-
-        if normalize:
-            ray_dir /= torch.linalg.vector_norm(
-                ray_dir,
-                ord=2,
-                dim=-1,
-                keepdim=True,
-            )
 
         return ray_dir
 

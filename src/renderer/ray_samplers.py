@@ -8,6 +8,44 @@ import torch
 import src.renderer.cameras as cameras
 
 
+class RayBundle(object):
+    """
+    A data structure for holding data, metadata for rays.
+
+    Attributes:
+        ray_origin (torch.Tensor): Tensor of shape (N, 3) representing ray origins.
+        ray_dir (torch.Tensor): Tensor of shape (N, 3) representing ray directions.
+        frame_type (str): A string indicating the type of the frame where ray origin
+            and direction lie in.
+    """
+
+    def __init__(
+        self,
+        ray_origin: torch.Tensor,
+        ray_dir: torch.Tensor,
+        frame_type: str,
+    ):
+        self._ray_origin = ray_origin
+        self._ray_dir = ray_dir
+        self._frame_type = frame_type
+
+    @property
+    def ray_origin(self) -> torch.Tensor:
+        """Returns an instance of torch.Tensor representing ray origins."""
+        return self._ray_origin
+
+    @property
+    def ray_dir(self) -> torch.Tensor:
+        """Returns an instance of torch.Tensor reprsenting ray directions."""
+        return self._ray_dir
+
+    @property
+    def frame_type(self) -> torch.Tensor:
+        """Returns a string indicating with respect to which frame ray origins
+        and directions are represented."""
+        return self._frame_type
+
+
 class RaySamplerBase(object):
     """
     Base class for ray samplers.

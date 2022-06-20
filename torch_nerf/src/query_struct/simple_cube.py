@@ -8,7 +8,7 @@ import torch
 from src.query_struct.query_struct_base import QueryStructBase
 
 
-class QSSimpleCube(QueryStructBase):
+class QSCube(QueryStructBase):
     """
     A simple cubic query structure.
 
@@ -21,7 +21,7 @@ class QSSimpleCube(QueryStructBase):
         radiance_field: torch.nn.Module,
     ):
         """
-        Constructor for QSSimpleCube.
+        Constructor for QSCube.
 
         Args:
             radiance_field (torch.nn.Module): A network representing the scene.

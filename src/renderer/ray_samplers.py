@@ -243,7 +243,8 @@ class RaySamplerBase(object):
 
     def sample_along_rays(
         self,
-        ray_bundle: RayBundle,
+        *args,
+        **kwargs,
     ) -> torch.Tensor:
         """
         Samples points along rays.
@@ -286,11 +287,13 @@ class StratifiedSampler(RaySamplerBase):
                 using the inverse sampling technique.
 
         Returns:
-            sample_pts (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3) representing
-            3D-coordinate of sample points sampled along rays. Here, N is the number of rays in a
-            ray bundle and S is the number of sample points along each ray.
+            sample_pts (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
+                3D-coordinate of sample points sampled along rays. Here, N is the number of rays
+                in a ray bundle and S is the number of sample points along each ray.
+            ray_dir (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
+                3D-vectors of viewing (ray) directions.
             delta (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing the
-            difference between adjacent t's.
+                difference between adjacent t's.
         """
         if cdf:
             if not isinstance(cdf, torch.Tensor):
@@ -332,4 +335,4 @@ class StratifiedSampler(RaySamplerBase):
         ray_dir = ray_dir.unsqueeze(1).repeat((1, num_sample, 1))
         sample_pts = ray_origin + t_samples.unsqueeze(-1) * ray_dir
 
-        return sample_pts, delta
+        return sample_pts, ray_dir, delta

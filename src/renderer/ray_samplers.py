@@ -25,13 +25,13 @@ class RayBundle(object):
         ray_dir: torch.Tensor,
         t_near: float,
         t_far: float,
-        frame_type: str,
+        is_ndc: bool,
     ):
         self._ray_origin = ray_origin
         self._ray_dir = ray_dir
         self._t_near = t_near
         self._t_far = t_far
-        self._frame_type = frame_type
+        self._is_ndc = is_ndc
 
     @property
     def ray_origin(self) -> torch.Tensor:
@@ -54,10 +54,9 @@ class RayBundle(object):
         return self._t_far
 
     @property
-    def frame_type(self) -> torch.Tensor:
-        """Returns a string indicating with respect to which frame ray origins
-        and directions are represented."""
-        return self._frame_type
+    def is_ndc(self) -> bool:
+        """Returns a flag indicating whether the rays are lying in NDC."""
+        return self._is_ndc
 
 
 class RaySamplerBase(object):
@@ -135,31 +134,25 @@ class RaySamplerBase(object):
         Args:
             pixel_coords (torch.Tensor): Tensor of shape (N, 2).
                 A flattened array of pixel coordinates.
+            camera (Camera):
+            project_to_ndc (bool):
 
         Returns:
-            ray_origin (torch.Tensor): Tensor of shape (N, 3).
-                Coordinates of ray origins in the world frame.
-            ray_dir (torch.Tensor): Tensor of shape (N, 3).
-                Ray direction vectors in the world frame.
+            An instane of 'RayBundle' containing ray information
+            necessary for volume rendering.
         """
         # generate ray direction vectors, origin coordinates in the camera frame.
         ray_dir = self._get_ray_directions(pixel_coords, camera.intrinsic)
-        ray_origin = self._get_ray_origin(
-            camera.z_near,
-            ray_dir,
-            translate_to_pixel=True,
-        )
-        ray_dir /= torch.linalg.vector_norm(
-            ray_dir,
-            ord=2,
-            dim=-1,
-            keepdim=True,
-        )
+        ray_origin = self._get_ray_origin(ray_dir)
 
-        # project rays to NDC if requested
-        #  NOTE: Although the supplementary material of the paper explains that
-        #  NDC transformation is applied to coordinates & vectors lying in the "camera" frame,
-        #  the official implementation applies this to the vectors in the "world" frame.
+        # transform the coordinates and vectors into the world frame
+        ray_dir = ray_dir @ camera.extrinsic[:3, :3]
+        ray_origin = ray_origin + camera.extrinsic[:3, -1]
+
+        # project rays to NDC
+        # NOTE: Although the supplementary material of the paper explains that
+        # NDC transformation is applied to coordinates & vectors lying in the "camera" frame,
+        # the official implementation applies this to the vectors in the "world" frame.
         if project_to_ndc:
             focal_lengths = camera.focal_lengths
             if focal_lengths[0] != focal_lengths[1]:
@@ -170,18 +163,23 @@ class RaySamplerBase(object):
                 )
             ray_origin, ray_dir = self.map_rays_to_ndc(
                 focal_lengths[0],
-                camera.z_near,
+                camera.t_near,
                 camera.img_height,
                 camera.img_width,
                 ray_origin,
                 ray_dir,
             )
 
-        # transform the coordinates and vectors into the world frame
-        ray_dir = ray_dir @ camera.extrinsic[:3, :3]
-        ray_origin = ray_origin + camera.extrinsic[:3, -1]
+        # pack things into 'RayBundle'
+        ray_bundle = RayBundle(
+            ray_origin,
+            ray_dir,
+            t_near=camera.t_near,
+            t_far=camera.t_far,
+            is_ndc=project_to_ndc,
+        )
 
-        return ray_origin, ray_dir
+        return ray_bundle
 
     def map_rays_to_ndc(
         self,

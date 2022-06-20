@@ -71,6 +71,7 @@ class RaySamplerBase(object):
         self,
         pixel_coords: torch.Tensor,
         cam_intrinsic: torch.Tensor,
+        normalize: bool,
     ) -> torch.Tensor:
         """
         Computes view direction vectors represented in the camera frame.
@@ -80,6 +81,8 @@ class RaySamplerBase(object):
                 A flattened array of pixel coordinates.
             cam_intrinsic (torch.Tensor): Tensor of shape (4, 4).
                 A camera intrinsic matrix.
+            normalize (bool): A flag to decide whether to normalize the
+                vectors to make them unit vectors.
 
         Returns:
             An instance of torch.Tensor of shape (N, 3) containing
@@ -98,6 +101,14 @@ class RaySamplerBase(object):
             ],
             dim=-1,
         )
+
+        if normalize:
+            ray_dir /= torch.linalg.vector_norm(
+                ray_dir,
+                ord=2,
+                dim=-1,
+                keepdim=True,
+            )
 
         return ray_dir
 
@@ -142,7 +153,11 @@ class RaySamplerBase(object):
             necessary for volume rendering.
         """
         # generate ray direction vectors, origin coordinates in the camera frame.
-        ray_dir = self._get_ray_directions(pixel_coords, camera.intrinsic)
+        ray_dir = self._get_ray_directions(
+            pixel_coords,
+            camera.intrinsic,
+            normalize=True,
+        )
         ray_origin = self._get_ray_origin(ray_dir)
 
         # transform the coordinates and vectors into the world frame
@@ -317,7 +332,7 @@ class StratifiedSampler(RaySamplerBase):
         partition_size = (ray_bundle.t_far - ray_bundle.t_near) / num_sample
 
         if cdf:  # sample from the given distribution
-            raise NotImplementedError()
+            raise NotImplementedError("TODO: Necessary for implementing hierarchical sampling!")
         else:  # sample from the uniform distribution within each interval
             t_samples = t_bins + partition_size * torch.rand_like(t_bins)
 

@@ -17,8 +17,8 @@ class CameraBase(object):
             2. Dictionary of camera intrinsic parameters whose keys are:
                 ['f_x', 'f_y', 'img_width', 'img_height']
         extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
-        z_near (float): A floating point number representing the nearest depth rendered.
-        z_far (float): A floating point number representing the farthest depth rendered.
+        t_near (float): The nearest distance rays can reach. (cf. x = o + t_near * d).
+        t_far (float): The farthest distance rays can reach. (cf. x = o + t_far * d).
         focal_lengths (tuple): A 2-tuple of floating point numbers representing the
             focal length of the horizontal axis, vertical axis, respectively.
         img_width (int): Width of the image.
@@ -29,8 +29,8 @@ class CameraBase(object):
         self,
         intrinsic: typing.Union[torch.Tensor, typing.Dict[str, float]],
         extrinsic: torch.Tensor,
-        z_near: float,
-        z_far: float,
+        t_near: float,
+        t_far: float,
     ):
         """
         Constructor of class 'CameraBase'.
@@ -41,8 +41,8 @@ class CameraBase(object):
                 2. Dictionary of camera intrinsic parameters whose keys are:
                     ['f_x', 'f_y', 'img_width', 'img_height']
             extrinsic (torch.Tensor): Tensor of shape (4, 4) representing an extrinsic matrix.
-            z_near (float): A floating point number representing the nearest depth rendered.
-            z_far (float): A floating point number representing the farthest depth rendered.
+            t_near (float): The nearest distance rays can reach. (cf. x = o + t_near * d).
+            t_far (float): The farthest distance rays can reach. (cf. x = o + t_far * d).
         """
         if not isinstance(intrinsic, (torch.Tensor, dict)):
             raise ValueError(
@@ -51,8 +51,8 @@ class CameraBase(object):
             )
 
         self._extrinsic = extrinsic
-        self._z_near = z_near
-        self._z_far = z_far
+        self._t_near = t_near
+        self._t_far = t_far
 
         if isinstance(intrinsic, torch.Tensor):
             if intrinsic.shape != torch.Size((4, 4)):
@@ -74,8 +74,6 @@ class CameraBase(object):
                 focal_y,
                 img_width,
                 img_height,
-                z_near,
-                z_far,
             )
 
             self._focal_x = float(focal_x)
@@ -89,8 +87,6 @@ class CameraBase(object):
         focal_y: float,
         img_width: float,
         img_height: float,
-        z_near: float,
-        z_far: float,
     ) -> torch.Tensor:
         """
         Constructs the camera intrinsic matrix from given camera parameters.
@@ -105,8 +101,6 @@ class CameraBase(object):
             focal_y (float): Focal length of the camera along the vertical axis.
             img_width (float): Width of the image.
             img_height (float): Height of the image.
-            z_near (float): A floating point number representing the nearest depth rendered.
-            z_far (float): A floating point number representing the farthest depth rendered.
 
         Returns:
             An instance of torch.Tensor of shape (4, 4) representing the intrinsic
@@ -116,13 +110,8 @@ class CameraBase(object):
             [
                 [focal_x, 0.0, img_width / 2.0, 0.0],
                 [0.0, focal_y, img_height / 2.0, 0.0],
-                [
-                    0.0,
-                    0.0,
-                    -(z_near + z_far) / (z_far - z_near),
-                    -2 * z_near * z_far / (z_far - z_near),
-                ],
-                [0.0, 0.0, -1.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],  # dummy row
+                [0.0, 0.0, -1.0, 0.0],  # dummy row
             ],
             dtype=torch.float32,
         )
@@ -139,14 +128,14 @@ class CameraBase(object):
         return self._extrinsic
 
     @property
-    def z_near(self) -> float:
-        """Returns the nearest depth rendered."""
-        return self._z_near
+    def t_near(self) -> float:
+        """Returns the nearest ray distance rendered."""
+        return self._t_near
 
     @property
-    def z_far(self) -> float:
-        """Returns the farthest depth rendered."""
-        return self._z_far
+    def t_far(self) -> float:
+        """Returns the farthest ray distance rendered."""
+        return self._t_far
 
     @property
     def img_width(self) -> int:
@@ -185,37 +174,20 @@ class CameraBase(object):
             raise ValueError(f"Expected tensor of shape (4, 4). Got {new_extrinsic.shape}.")
         self._extrinsic = new_extrinsic
 
-    @z_near.setter
-    def z_near(
+    @t_near.setter
+    def t_near(
         self,
-        new_z_near: float,
+        new_t_near: float,
     ) -> None:
-        if not isinstance(new_z_near, int, float):
-            raise ValueError(f"Expected variable of numeric type. Got {type(new_z_near)}.")
-        self._z_near = float(new_z_near)
+        if not isinstance(new_t_near, int, float):
+            raise ValueError(f"Expected variable of numeric type. Got {type(new_t_near)}.")
+        self._t_near = float(new_t_near)
 
-    @z_far.setter
-    def z_far(
+    @t_far.setter
+    def t_far(
         self,
-        new_z_far: float,
+        new_t_far: float,
     ) -> None:
-        if not isinstance(new_z_far, int, float):
-            raise ValueError(f"Expected variable of numeric type. Got {type(new_z_far)}.")
-        self._z_far = float(new_z_far)
-
-    """
-    @focal_lengths.setter
-    def focal_lengths(
-        self,
-        new_focal_lengths: typing.Tuple[float, float],
-    ) -> None:
-        if not isinstance(new_focal_lengths, tuple, list):
-            raise ValueError(
-                f"Expected a tuple or list as a parameter. Got {type(new_focal_lengths)}."
-            )
-        if not isinstance(new_focal_lengths[0], float):
-            raise ValueError(
-                f"Expected variable of numeric type. Got {type(new_focal_lengths[0])}."
-            )
-        self._focal_lengths = (float(f) for f in new_focal_lengths)
-    """
+        if not isinstance(new_t_far, int, float):
+            raise ValueError(f"Expected variable of numeric type. Got {type(new_t_far)}.")
+        self._t_far = float(new_t_far)

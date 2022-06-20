@@ -10,7 +10,7 @@ class IntegratorBase(object):
     Base class for integrators.
     """
 
-    def __init__(self):
+    def __init__(self, *arg, **kwargs):
         pass
 
     def integrate_along_rays(
@@ -30,9 +30,6 @@ class QuadratureIntegrator(IntegratorBase):
     """
     Numerical integrator which approximates integral using quadrature.
     """
-
-    def __init__(self):
-        super().__init__()
 
     def integrate_along_rays(
         self,

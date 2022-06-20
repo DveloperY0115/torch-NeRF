@@ -258,9 +258,6 @@ class StratifiedSampler(RaySamplerBase):
     Stratified sampler proposed in NeRF (ECCV 2020).
     """
 
-    def __init__(self):
-        super().__init__()
-
     def sample_along_rays(
         self,
         ray_bundle: RayBundle,

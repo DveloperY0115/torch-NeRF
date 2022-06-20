@@ -321,7 +321,7 @@ class StratifiedSampler(RaySamplerBase):
         else:  # sample from the uniform distribution within each interval
             t_samples = t_bins + partition_size * torch.rand_like(t_bins)
 
-        # compute delta - t_{i+1} - t_{i}
+        # compute delta: t_{i+1} - t_{i}
         delta = torch.diff(
             torch.cat([t_samples, 1e8 * torch.ones((t_samples.shape[0], 1))], dim=-1),
             n=1,

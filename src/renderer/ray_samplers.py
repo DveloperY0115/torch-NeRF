@@ -104,9 +104,7 @@ class RaySamplerBase(object):
 
     def _get_ray_origin(
         self,
-        z_near: float,
         ray_dir: torch.Tensor,
-        translate_to_pixel: bool,
     ) -> torch.Tensor:
         """
         Computes ray origin coordinate in the world frame.
@@ -119,11 +117,7 @@ class RaySamplerBase(object):
             An instance of torch.Tensor of shape (3,) representing
             the origin of the camera in the camera frame.
         """
-        if translate_to_pixel:
-            t_near = (-(z_near) / ray_dir[:, 2]).unsqueeze(-1)
-            ray_origin = t_near * ray_dir
-        else:
-            ray_origin = torch.zeros_like(ray_dir)
+        ray_origin = torch.zeros_like(ray_dir)
 
         return ray_origin
 

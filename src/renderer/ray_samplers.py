@@ -23,10 +23,14 @@ class RayBundle(object):
         self,
         ray_origin: torch.Tensor,
         ray_dir: torch.Tensor,
+        t_near: float,
+        t_far: float,
         frame_type: str,
     ):
         self._ray_origin = ray_origin
         self._ray_dir = ray_dir
+        self._t_near = t_near
+        self._t_far = t_far
         self._frame_type = frame_type
 
     @property
@@ -38,6 +42,16 @@ class RayBundle(object):
     def ray_dir(self) -> torch.Tensor:
         """Returns an instance of torch.Tensor reprsenting ray directions."""
         return self._ray_dir
+
+    @property
+    def t_near(self) -> float:
+        """Returns the nearest ray distance."""
+        return self._t_near
+
+    @property
+    def t_far(self) -> float:
+        """Returns the farthest ray distance."""
+        return self._t_far
 
     @property
     def frame_type(self) -> torch.Tensor:

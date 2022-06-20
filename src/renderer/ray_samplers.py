@@ -289,9 +289,11 @@ class StratifiedSampler(RaySamplerBase):
                 using the inverse sampling technique.
 
         Returns:
-            An instance of torch.Tensor of shape (N * S, 3) representing 3D-coordinate of sample
-            points sampled along rays. Here, N is the number of rays in a ray bundle and S is
-            the number of sample points along each ray.
+            sample_pts (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3) representing
+            3D-coordinate of sample points sampled along rays. Here, N is the number of rays in a
+            ray bundle and S is the number of sample points along each ray.
+            delta (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing the
+            difference between adjacent t's.
         """
         if cdf:
             if not isinstance(cdf, torch.Tensor):

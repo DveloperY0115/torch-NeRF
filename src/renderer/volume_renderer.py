@@ -53,6 +53,7 @@ class VolumeRenderer(object):
         self,
         scene: query_struct.QueryStructBase,
         num_pixels: int,
+        num_samples: int,
         project_to_ndc: bool,
     ):
         """
@@ -60,12 +61,15 @@ class VolumeRenderer(object):
 
         Args:
             scene (QueryStruct): An instance of class derived from 'QueryStructBase'.
+            num_samples (int): Number of samples drawn along each ray.
             num_pixels (int): Number of pixels to render.
                 If smaller than the total number of pixels in the current resolution,
                 sample pixels randomly.
+            project_to_ndc (bool):
 
         Returns:
-
+            pixel_rgb (torch.Tensor): An instance of torch.Tensor of shape (num_pixels, 3).
+                The final pixel colors of rendered image lying in RGB color space.
         """
         if not isinstance(num_pixels, int):
             raise ValueError(f"Expected variable of type int. Got {type(num_pixels)}.")
@@ -86,13 +90,25 @@ class VolumeRenderer(object):
         # generate sample points along rays
         coords = self.screen_coords.clone()
         coords = coords[pixel_to_render, :]
-        ray_origin, ray_dir = self.sampler.generate_rays(
+        ray_bundle = self.sampler.generate_rays(
             coords,
             self.camera,
-            project_to_ndc=True,
+            project_to_ndc=project_to_ndc,
         )
 
         # sample points along rays
+        sample_pts, ray_dir, delta = self.sampler.sample_along_rays(
+            ray_bundle,
+            num_samples,
+        )
+
+        # query the scene to get density and radiance
+        sigma, radiance = scene.query_points(sample_pts, ray_dir)
+
+        # compute pixel colors by evaluating the volume rendering equation
+        pixel_rgb = self.integrator.integrate_along_rays(sigma, radiance, delta)
+
+        return pixel_rgb
 
     def _generate_screen_coords(self) -> torch.Tensor:
         """

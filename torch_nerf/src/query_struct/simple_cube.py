@@ -57,6 +57,6 @@ class QSCube(QueryStructBase):
         return self._radiance_field(pos, view_dir)
 
     @property
-    def raidance_field(self) -> torch.nn.Module:
+    def radiance_field(self) -> torch.nn.Module:
         """Returns the network queried through this query structure."""
         return self._radiance_field

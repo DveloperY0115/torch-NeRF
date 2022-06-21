@@ -1,2 +1,4 @@
 integrator_type: quadrature
 sampler_type: stratified
+t_near: 2.0
+t_far: 6.0

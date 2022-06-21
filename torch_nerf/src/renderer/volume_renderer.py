@@ -51,6 +51,7 @@ class VolumeRenderer(object):
         if self._camera:
             self._screen_coords = self._generate_screen_coords()
         else:
+            self._screen_coords = None
             print(
                 "Warning: Camera parameters are not initialized."
             )  # TODO: replace this with logger
@@ -157,9 +158,12 @@ class VolumeRenderer(object):
     @property
     def screen_coords(self) -> torch.Tensor:
         """Returns the tensor of screen space coordinates."""
+        assert (
+            not self._screen_coords is None
+        ), "Screen coordinates must not be None at rendering time."
         return self._screen_coords
 
     @camera.setter
     def camera(self, new_camera: cameras.CameraBase) -> None:
         self._camera = new_camera
-        self._generate_screen_coords()  # update screen coordinate
+        self._screen_coords = self._generate_screen_coords()  # update screen coordinate

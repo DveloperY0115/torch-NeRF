@@ -5,6 +5,7 @@ Base class for query structures.
 import typing
 
 import torch
+from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
 
 
 class QueryStructBase(object):
@@ -12,8 +13,17 @@ class QueryStructBase(object):
     Query structure base class.
     """
 
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(
+        self,
+        encoders: typing.Optional[typing.Dict[str, SignalEncoderBase]] = None,
+    ):
+        if not isinstance(encoders, dict):
+            raise ValueError(f"Expected a parameter of type Dict. Got {type(encoders)}")
+        if not "coord_enc" in encoders.keys():
+            raise ValueError(f"Missing required encoder type 'coord_enc'. Got {encoders.keys()}.")
+        if not "dir_enc" in encoders.keys():
+            raise ValueError(f"Missing required encoder type 'dir_enc'. Got {encoders.keys()}.")
+        self._encoders = encoders
 
     def query_points(
         self,
@@ -34,3 +44,23 @@ class QueryStructBase(object):
                 The radiance at each sample point.
         """
         raise NotImplementedError()
+
+    @property
+    def encoders(self) -> typing.Optional[typing.Dict[str, SignalEncoderBase]]:
+        """
+        Returns the signal encoders that process signals before
+        querying the neural radiance field(s).
+        """
+        return self._encoders
+
+    @encoders.setter
+    def encoders(self, new_encoders) -> None:
+        if not isinstance(new_encoders, dict):
+            raise ValueError(f"Expected a parameter of type Dict. Got {type(new_encoders)}")
+        if not "coord_enc" in new_encoders.keys():
+            raise ValueError(
+                f"Missing required encoder type 'coord_enc'. Got {new_encoders.keys()}."
+            )
+        if not "dir_enc" in new_encoders.keys():
+            raise ValueError(f"Missing required encoder type 'dir_enc'. Got {new_encoders.keys()}.")
+        self._encoders = new_encoders

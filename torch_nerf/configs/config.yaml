@@ -1,0 +1,4 @@
+defaults:
+  - data: nerf_synthetic
+  - renderer: default
+  - scene_repr: nerf_bounded

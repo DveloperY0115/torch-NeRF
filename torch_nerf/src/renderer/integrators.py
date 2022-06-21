@@ -46,11 +46,11 @@ class QuadratureIntegrator(IntegratorBase):
 
         Args:
             sigma (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing
-            the density at each sample point.
+                the density at each sample point.
             radiance (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3) representing
-            the radiance at each sample point.
+                the radiance at each sample point.
             delta (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing the
-            difference between adjacent t's.
+                difference between adjacent t's.
 
         Returns:
             An instance of torch.Tensor of shape (N, 3) representing the final pixel

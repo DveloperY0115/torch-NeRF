@@ -28,13 +28,11 @@ def init_dataset_and_loader(
         dataset (torch.utils.data.Dataset): Dataset object.
         loader (torch.utils.data.DataLoader): DataLoader object.
     """
-    # identify dataset type
     if cfg.data.dataset_type == "nerf_synthetic":
         dataset = NeRFBlenderDataset(cfg.data.data_root, cfg.data.data_type)
     else:
         raise ValueError("Unsupported dataset.")
 
-    # create a loader
     loader = data.DataLoader(
         dataset,
         batch_size=cfg.data.batch_size,
@@ -44,14 +42,31 @@ def init_dataset_and_loader(
     return dataset, loader
 
 
-def init_renderer(config):
+def init_renderer(cfg: DictConfig):
     """
     Initialize the renderer for rendering scene representations.
 
     Args:
-
+        cfg (DictConfig): A config object holding parameters required
+            to setup renderer.
     """
-    return
+    integrator = None
+    sampler = None
+
+    # TODO: Separate below lines to functions
+    if cfg.renderer.integrator_type == "quadrature":
+        integrator = integrators.QuadratureIntegrator()
+    else:
+        raise ValueError("Unsupported integrator type.")
+
+    if cfg.renderer.sampler_type == "stratified":
+        sampler = ray_samplers.StratifiedSampler()
+    else:
+        raise ValueError("Unsupported ray sampler type.")
+
+    renderer = VolumeRenderer(integrator, sampler)
+
+    return renderer
 
 
 def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:

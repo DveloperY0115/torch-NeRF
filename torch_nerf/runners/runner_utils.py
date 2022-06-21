@@ -97,9 +97,12 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
             cfg.network.view_dir_dim,
             cfg.signal_encoder.dir_encode_level,
         )
-        scene = qs.QSCube(radiance_field)
+        scene = qs.QSCube(
+            radiance_field,
+            {"coord_enc": coord_enc, "dir_enc": dir_enc},
+        )
 
-        return scene, {"coord_enc": coord_enc, "dir_enc": dir_enc}
+        return scene
     else:
         raise ValueError("Unsupported scene representation.")
 

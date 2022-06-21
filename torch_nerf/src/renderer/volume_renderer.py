@@ -76,6 +76,8 @@ class VolumeRenderer(object):
         Returns:
             pixel_rgb (torch.Tensor): An instance of torch.Tensor of shape (num_pixels, 3).
                 The final pixel colors of rendered image lying in RGB color space.
+            pixel_to_render (torch.Tensor): An instance of torch.Tensor of shape (num_pixels, ).
+                The array holding index of pixels rendered.
         """
         if not isinstance(num_pixels, int):
             raise ValueError(f"Expected variable of type int. Got {type(num_pixels)}.")
@@ -114,7 +116,7 @@ class VolumeRenderer(object):
         # compute pixel colors by evaluating the volume rendering equation
         pixel_rgb = self.integrator.integrate_along_rays(sigma, radiance, delta)
 
-        return pixel_rgb
+        return pixel_rgb, pixel_to_render
 
     def _generate_screen_coords(self) -> torch.Tensor:
         """

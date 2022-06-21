@@ -3,6 +3,7 @@ Volume renderer implemented using Pytorch.
 """
 
 import random
+import typing
 
 import torch
 import torch_nerf.src.query_struct as query_struct
@@ -26,9 +27,9 @@ class VolumeRenderer(object):
 
     def __init__(
         self,
-        camera: cameras.CameraBase,
         integrator: integrators.IntegratorBase,
         sampler: ray_samplers.RaySamplerBase,
+        camera: typing.Optional[cameras.CameraBase] = None,
     ):
         """
         Constructor of class 'VolumeRenderer'.
@@ -42,12 +43,17 @@ class VolumeRenderer(object):
                 Samples the points in 3D space to evaluate neural scene representations.
         """
         # initialize fundamental components
-        self._camera = camera
         self._integrator = integrator
         self._sampler = sampler
+        self._camera = camera
 
         # precompute pixel coordinates
-        self._screen_coords = self._generate_screen_coords()
+        if self._camera:
+            self._screen_coords = self._generate_screen_coords()
+        else:
+            print(
+                "Warning: Camera parameters are not initialized."
+            )  # TODO: replace this with logger
 
     def render_scene(
         self,
@@ -150,3 +156,8 @@ class VolumeRenderer(object):
     def screen_coords(self) -> torch.Tensor:
         """Returns the tensor of screen space coordinates."""
         return self._screen_coords
+
+    @camera.setter
+    def camera(self, new_camera: cameras.CameraBase) -> None:
+        self._camera = new_camera
+        self._generate_screen_coords()  # update screen coordinate

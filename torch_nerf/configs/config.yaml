@@ -1,4 +1,6 @@
 defaults:
   - data: nerf_synthetic
   - renderer: default
-  - scene_repr: nerf_bounded
+  - network: nerf_mlp
+  - query_struct: nerf_bounded
+  - signal_encoder: pe

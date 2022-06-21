@@ -5,10 +5,10 @@ Volume renderer implemented using Pytorch.
 import random
 
 import torch
-import src.query_struct as query_struct
-import src.renderer.cameras as cameras
-import src.renderer.integrators as integrators
-import src.renderer.ray_samplers as ray_samplers
+import torch_nerf.src.query_struct as query_struct
+import torch_nerf.src.renderer.cameras as cameras
+import torch_nerf.src.renderer.integrators as integrators
+import torch_nerf.src.renderer.ray_samplers as ray_samplers
 
 
 class VolumeRenderer(object):

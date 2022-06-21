@@ -5,7 +5,7 @@ Ray samplers for sampling rays used for volume rendering.
 import typing
 
 import torch
-import src.renderer.cameras as cameras
+import torch_nerf.src.renderer.cameras as cameras
 
 
 class RayBundle(object):

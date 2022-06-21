@@ -5,17 +5,23 @@ import sys
 sys.path.append(".")
 sys.path.append("..")
 
+import hydra
+from omegaconf import DictConfig, OmegaConf
 import torch
 import torch.utils.data as data
-import src.network as network
-import src.renderer.cameras as cameras
-import src.renderer.integrators as integrators
-import src.renderer.ray_samplers as ray_samplers
-from src.renderer.volume_renderer import VolumeRenderer
-from src.utils.data.blender_dataset import NeRFBlenderDataset
+import torch_nerf.src.network as network
+import torch_nerf.src.renderer.cameras as cameras
+import torch_nerf.src.renderer.integrators as integrators
+import torch_nerf.src.renderer.ray_samplers as ray_samplers
+from torch_nerf.src.renderer.volume_renderer import VolumeRenderer
+from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 
-def main():
-    """The entry point of test."""
+
+@hydra.main(config_path="torch_nerf/configs", config_name="config")
+def main(cfg: DictConfig) -> None:
+    """The entry point of train."""
+    print(OmegaConf.to_yaml((cfg)))
+    return
 
     # initialize dataset
     root_path = "data/nerf_synthetic/lego"
@@ -51,7 +57,7 @@ def main():
     renderer = VolumeRenderer(camera, integrator, sampler)
 
     renderer.render_scene(
-        ,
+        None,
         num_pixels=1024,
         num_samples=128,
         project_to_ndc=False,

@@ -6,7 +6,7 @@ import typing
 
 import torch
 import torch.utils.data as data
-from src.utils.data.load_blender import load_blender_data
+from torch_nerf.src.utils.data.load_blender import load_blender_data
 
 
 class NeRFBlenderDataset(data.Dataset):

@@ -3,6 +3,7 @@
 import typing
 
 from omegaconf import DictConfig
+import torch
 import torch.utils.data as data
 import torch_nerf.src.network as network
 import torch_nerf.src.query_struct as qs
@@ -18,7 +19,7 @@ def init_dataset_and_loader(
     cfg: DictConfig,
 ) -> typing.Tuple[data.Dataset, data.DataLoader]:
     """
-    Initialize the dataset and loader.
+    Initializes the dataset and loader.
 
     Args:
         cfg (DictConfig): A config object holding parameters required
@@ -44,7 +45,7 @@ def init_dataset_and_loader(
 
 def init_renderer(cfg: DictConfig):
     """
-    Initialize the renderer for rendering scene representations.
+    Initializes the renderer for rendering scene representations.
 
     Args:
         cfg (DictConfig): A config object holding parameters required
@@ -71,7 +72,7 @@ def init_renderer(cfg: DictConfig):
 
 def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
     """
-    Initialize the scene representation to be trained / tested.
+    Initializes the scene representation to be trained / tested.
 
     Load pretrained scene if weights are provided as an argument.
 
@@ -101,3 +102,40 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
         return scene, {"coord_enc": coord_enc, "dir_enc": dir_enc}
     else:
         raise ValueError("Unsupported scene representation.")
+
+
+def init_optimizer_and_scheduler(cfg: DictConfig, scene):
+    """
+    Initializes the optimizer and learning rate scheduler used for training.
+
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup optimizer and learning rate scheduler.
+        scene (QueryStruct): A scene representation holding the neural network(s)
+            to be optimized.
+
+    Returns:
+
+    """
+    optimizer = None
+    scheduler = None
+
+    if cfg.train_params.optim.optim_type == "adam":
+        optimizer = torch.optim.Adam(
+            scene.radiance_field.parameters(),
+            lr=cfg.train_params.optim.init_lr,
+        )  # TODO: A scene may contain two or more networks!
+
+    if cfg.train_params.optim.scheduler_type == "exp":
+        # compute decay rate
+        init_lr = cfg.train_params.optim.init_lr
+        end_lr = cfg.train_params.optim.end_lr
+        num_iter = cfg.train_params.optim.num_iter
+        gamma = pow(end_lr / init_lr, 1 / num_iter)
+
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(
+            optimizer,
+            gamma,
+        )
+
+    return optimizer, scheduler

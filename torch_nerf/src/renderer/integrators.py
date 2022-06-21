@@ -61,13 +61,16 @@ class QuadratureIntegrator(IntegratorBase):
         # compute transmittance: T_{i}
         transmittance = torch.exp(
             -torch.cumsum(
-                torch.cat([torch.zeros((sigma.shape[0], 1)), sigma_delta]),
+                torch.cat(
+                    [torch.zeros((sigma.shape[0], 1)), sigma_delta],
+                    dim=-1,
+                ),
                 dim=-1,
             )[..., :-1]
         )
 
         # compute alpha: (1 - exp (- sigma_{i} * delta_{i}))
-        alpha = 1.0 - torch.exp(-sigma_delta).unsqueeze(-1)
+        alpha = 1.0 - torch.exp(-sigma_delta)
 
         # compute numerical integral to determine pixel colors
         # C = sum_{i=1}^{S} T_{i} * alpha_{i} * c_{i}

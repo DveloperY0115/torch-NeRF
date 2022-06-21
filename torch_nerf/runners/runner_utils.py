@@ -5,6 +5,7 @@ import typing
 from omegaconf import DictConfig
 import torch.utils.data as data
 import torch_nerf.src.network as network
+import torch_nerf.src.query_struct as qs
 import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.src.renderer.integrators as integrators
 import torch_nerf.src.renderer.ray_samplers as ray_samplers
@@ -52,13 +53,28 @@ def init_renderer(config):
     return
 
 
-def init_scene_repr(config):
+def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
     """
     Initialize the scene representation to be trained / tested.
 
     Load pretrained scene if weights are provided as an argument.
 
     Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup scene representation.
 
+    Returns:
+        scene (QueryStruct): An instance of derived class of QueryStructBase.
+            The scene representation.
     """
-    return
+    # initialize query structure & radiance fields
+    if cfg.query_struct.type == "cube":
+        radiance_field = network.nerf_mlp.NeRFMLP(
+            cfg.network.coord_encode_level,
+            cfg.network.dir_encode_level,
+        )
+        scene = qs.simple_cube.QSCube(radiance_field)
+    else:
+        raise ValueError("Unsupported scene representation.")
+
+    return scene

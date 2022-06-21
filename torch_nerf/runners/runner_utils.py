@@ -30,7 +30,11 @@ def init_dataset_and_loader(
         loader (torch.utils.data.DataLoader): DataLoader object.
     """
     if cfg.data.dataset_type == "nerf_synthetic":
-        dataset = NeRFBlenderDataset(cfg.data.data_root, cfg.data.data_type)
+        dataset = NeRFBlenderDataset(
+            cfg.data.data_root,
+            cfg.data.data_type,
+            cfg.data.white_bg,
+        )
     else:
         raise ValueError("Unsupported dataset.")
 

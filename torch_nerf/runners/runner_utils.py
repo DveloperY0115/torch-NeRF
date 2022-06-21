@@ -15,6 +15,27 @@ import torch_nerf.src.signal_encoder.positional_encoder as pe
 from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 
 
+def init_cuda(cfg: DictConfig) -> None:
+    """
+    Check availability of CUDA devices in the system and set the default device.
+    """
+    if torch.cuda.is_available():
+        device_id = cfg.cuda.device_id
+
+        if device_id > torch.cuda.device_count() - 1:
+            print(
+                "Invalid device ID. "
+                f"There are {torch.cuda.device_count()} devices but got index {device_id}."
+            )
+            device_id = 0
+            cfg.cuda.device_id = device_id  # overwrite config
+            print(f"Set device ID to {cfg.cuda.device_id} by default.")
+        torch.cuda.set_device(cfg.cuda.device_id)
+        print(f"CUDA device detected. Using device {torch.cuda.current_device()}.")
+    else:
+        print("CUDA is not supported on this system. Using CPU by default.")
+
+
 def init_dataset_and_loader(
     cfg: DictConfig,
 ) -> typing.Tuple[data.Dataset, data.DataLoader]:
@@ -92,7 +113,7 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
         radiance_field = network.NeRFMLP(
             2 * cfg.signal_encoder.coord_encode_level * cfg.network.pos_dim,
             2 * cfg.signal_encoder.dir_encode_level * cfg.network.view_dir_dim,
-        )
+        ).to(cfg.cuda.device_id)
         coord_enc = pe.PositionalEncoder(
             cfg.network.pos_dim,
             cfg.signal_encoder.coord_encode_level,

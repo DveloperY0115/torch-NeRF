@@ -62,6 +62,7 @@ class VolumeRenderer(object):
         num_pixels: int,
         num_samples: int,
         project_to_ndc: bool,
+        device: int,
     ):
         """
         Renders the scene by querying underlying 3D inductive bias.
@@ -73,6 +74,7 @@ class VolumeRenderer(object):
                 If smaller than the total number of pixels in the current resolution,
                 sample pixels randomly.
             project_to_ndc (bool):
+            device (int):
 
         Returns:
             pixel_rgb (torch.Tensor): An instance of torch.Tensor of shape (num_pixels, 3).
@@ -110,6 +112,11 @@ class VolumeRenderer(object):
             ray_bundle,
             num_samples,
         )
+
+        # load data to GPUs
+        sample_pts = sample_pts.to(device)
+        ray_dir = ray_dir.to(device)
+        delta = delta.to(device)
 
         # query the scene to get density and radiance
         sigma, radiance = scene.query_points(sample_pts, ray_dir)

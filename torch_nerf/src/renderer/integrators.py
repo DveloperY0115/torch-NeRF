@@ -62,7 +62,7 @@ class QuadratureIntegrator(IntegratorBase):
         transmittance = torch.exp(
             -torch.cumsum(
                 torch.cat(
-                    [torch.zeros((sigma.shape[0], 1)), sigma_delta],
+                    [torch.zeros((sigma.shape[0], 1), device=sigma_delta.device), sigma_delta],
                     dim=-1,
                 ),
                 dim=-1,

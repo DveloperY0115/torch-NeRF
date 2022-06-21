@@ -7,6 +7,7 @@ sys.path.append(".")
 sys.path.append("..")
 
 import hydra
+import numpy as np
 from omegaconf import DictConfig
 import torch
 import torchvision.utils as tvu
@@ -57,7 +58,7 @@ def main(cfg: DictConfig) -> None:
             )
             renderer.camera = camera
 
-            pixel_pred, pixel_indices = renderer.render_scene(
+            pixel_pred, pixel_indices, radiance, sample_pts = renderer.render_scene(
                 scene,
                 num_pixels=cfg.renderer.num_pixels,
                 num_samples=cfg.renderer.num_samples,
@@ -77,27 +78,16 @@ def main(cfg: DictConfig) -> None:
                 scheduler.step()
             print(f"Iter {epoch * len(dataset) + batch_idx} Loss: {loss}.")
 
-            # render full image at the end of each epoch
-            if batch_idx == len(dataset) - 1:
-                render_dir = "renders"
-                if not os.path.exists(render_dir):
-                    os.mkdir(render_dir)
+        # visualize every 1000 epochs
+        if (epoch + 1) % 1000 == 0:
+            pc_dir = "pointclouds"
+            if not os.path.exists(pc_dir):
+                os.mkdir(pc_dir)
 
-                with torch.no_grad():
-                    pixel_pred, _ = renderer.render_scene(
-                        scene,
-                        num_pixels=dataset.img_width * dataset.img_height,
-                        num_samples=cfg.renderer.num_samples,
-                        project_to_ndc=cfg.renderer.project_to_ndc,
-                        device=torch.cuda.current_device(),
-                    )
-
-                    pixel_pred = torch.reshape(
-                        pixel_pred, (dataset.img_height, dataset.img_width, -1)
-                    )
-
-                    tvu.save_image(pixel_pred, os.path.join(render_dir, f"epoch_{epoch}.png"))
-
+            np.save(
+                os.path.join(pc_dir, f"epoch_{epoch}.npy"),
+                torch.cat([sample_pts, radiance], dim=-1).detach().cpu().numpy(),
+            )
 
 
 if __name__ == "__main__":

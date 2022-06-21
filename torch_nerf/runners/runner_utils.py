@@ -1,14 +1,45 @@
 """A set of utility functions commonly used in training/testing scripts."""
 
+import typing
 
-def init_dataset_and_loader(config):
+from omegaconf import DictConfig
+import torch.utils.data as data
+import torch_nerf.src.network as network
+import torch_nerf.src.renderer.cameras as cameras
+import torch_nerf.src.renderer.integrators as integrators
+import torch_nerf.src.renderer.ray_samplers as ray_samplers
+from torch_nerf.src.renderer.volume_renderer import VolumeRenderer
+from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
+
+
+def init_dataset_and_loader(
+    cfg: DictConfig,
+) -> typing.Tuple[data.Dataset, data.DataLoader]:
     """
     Initialize the dataset and loader.
 
     Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup dataset and loader.
 
+    Returns:
+        dataset (torch.utils.data.Dataset): Dataset object.
+        loader (torch.utils.data.DataLoader): DataLoader object.
     """
-    return
+    # identify dataset type
+    if cfg.data.dataset_type == "nerf_synthetic":
+        dataset = NeRFBlenderDataset(cfg.data.data_root, cfg.data.data_type)
+    else:
+        raise ValueError("Unsupported dataset.")
+
+    # create a loader
+    loader = data.DataLoader(
+        dataset,
+        batch_size=cfg.data.batch_size,
+        shuffle=cfg.data.shuffle,
+    )
+
+    return dataset, loader
 
 
 def init_renderer(config):

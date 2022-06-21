@@ -5,63 +5,69 @@ import sys
 sys.path.append(".")
 sys.path.append("..")
 
+import cv2
 import hydra
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 import torch
-import torch.utils.data as data
-import torch_nerf.src.network as network
+from tqdm import tqdm
 import torch_nerf.src.renderer.cameras as cameras
-import torch_nerf.src.renderer.integrators as integrators
-import torch_nerf.src.renderer.ray_samplers as ray_samplers
-from torch_nerf.src.renderer.volume_renderer import VolumeRenderer
-from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
+import torch_nerf.runners.runner_utils as runner_utils
 
 
-@hydra.main(config_path="torch_nerf/configs", config_name="config")
+@hydra.main(
+    version_base=None,
+    config_path="../configs",  # config file search path is relative to this script
+    config_name="config",
+)
 def main(cfg: DictConfig) -> None:
     """The entry point of train."""
-    print(OmegaConf.to_yaml((cfg)))
-    return
 
-    # initialize dataset
-    root_path = "data/nerf_synthetic/lego"
-    dataset = NeRFBlenderDataset(root_path, "train")
-    loader = iter(data.DataLoader(dataset, batch_size=1))
+    # initialize data, renderer, and scene
+    dataset, loader = runner_utils.init_dataset_and_loader(cfg)
+    renderer = runner_utils.init_renderer(cfg)
+    scene = runner_utils.init_scene_repr(cfg)
+    optimizer, scheduler = runner_utils.init_optimizer_and_scheduler(cfg, scene)
+    loss_func = runner_utils.init_objective_func(cfg)
 
-    focal_length = dataset.focal_length
-    img_height = dataset.img_height
-    img_width = dataset.img_width
+    # train the model
+    for batch in tqdm(loader):
+        pixel_gt, extrinsic = batch
+        pixel_gt = pixel_gt.squeeze()
+        pixel_gt = torch.reshape(pixel_gt, (-1, 3))  # (H, W, 3) -> (H * W, 3)
+        extrinsic = extrinsic.squeeze()
 
-    # initialize model & query structure
-    nerf_mlp = network.nerf_mlp.NeRFMLP(pos_dim, view_dir_dim)
+        # initialize gradients to zero
+        optimizer.zero_grad()
 
-    # load image and camera extrinsic
-    rgb_gt, extrinsic = next(loader)
-    rgb_gt = rgb_gt.squeeze()  # [B, *] -> [*]
-    extrinsic = extrinsic.squeeze()  # [B, *] -> [*]
+        # set the camera
+        camera = cameras.CameraBase(
+            {
+                "f_x": dataset.focal_length,
+                "f_y": dataset.focal_length,
+                "img_width": dataset.img_width,
+                "img_height": dataset.img_height,
+            },
+            extrinsic,
+            cfg.renderer.t_near,
+            cfg.renderer.t_far,
+        )
+        renderer.camera = camera
 
-    # initialize renderer
-    camera = cameras.CameraBase(
-        {
-            "f_x": focal_length,
-            "f_y": focal_length,
-            "img_width": img_width,
-            "img_height": img_height,
-        },
-        extrinsic,
-        2.0,
-        6.0,
-    )
-    integrator = integrators.QuadratureIntegrator()
-    sampler = ray_samplers.StratifiedSampler()
-    renderer = VolumeRenderer(camera, integrator, sampler)
+        pixel_pred, pixel_indices = renderer.render_scene(
+            scene,
+            num_pixels=1024,
+            num_samples=128,
+            project_to_ndc=False,
+        )
 
-    renderer.render_scene(
-        None,
-        num_pixels=1024,
-        num_samples=128,
-        project_to_ndc=False,
-    )
+        # compute L2 loss
+        loss = loss_func(pixel_gt[pixel_indices, ...], pixel_pred)
+
+        # step
+        loss.backward()
+        optimizer.step()
+        if not scheduler is None:
+            scheduler.step()
 
 
 if __name__ == "__main__":

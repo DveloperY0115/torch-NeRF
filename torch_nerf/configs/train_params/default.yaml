@@ -1,0 +1,6 @@
+optim:
+  num_iter: 200000
+  optim_type: adam
+  scheduler_type: exp
+  init_lr: 0.0005
+  end_lr: 0.00005

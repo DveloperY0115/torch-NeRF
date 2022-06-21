@@ -1,6 +1,7 @@
 defaults:
   - data: nerf_synthetic
-  - renderer: default
   - network: nerf_mlp
+  - train_params: default
   - query_struct: nerf_bounded
+  - renderer: default
   - signal_encoder: pe

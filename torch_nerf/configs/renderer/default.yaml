@@ -1,0 +1,2 @@
+integrator_type: quadrature
+sampler_type: stratified

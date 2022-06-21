@@ -107,13 +107,13 @@ class NeRFMLP(nn.Module):
         x = self.relu_actvn(self.fc_7(x))
         x = self.fc_8(x)
 
-        sigma = x[:, 0]
+        sigma = self.relu_actvn(x[:, 0])
         x = torch.cat([x[:, 1:], view_dir], dim=-1)
 
         x = self.relu_actvn(self.fc_9(x))
         rgb = self.sigmoid_actvn(self.fc_out(x))
 
-        return {"sigma": sigma, "rgb": rgb}
+        return sigma, rgb
 
     @property
     def pos_dim(self):

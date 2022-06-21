@@ -78,15 +78,23 @@ def main(cfg: DictConfig) -> None:
                 scheduler.step()
             print(f"Iter {epoch * len(dataset) + batch_idx} Loss: {loss}.")
 
-        # visualize every 1000 epochs
-        if (epoch + 1) % 1000 == 0:
+        # visualize every 50 epochs
+        if (epoch + 1) % 50 == 0:
             pc_dir = "pointclouds"
+            ckpt_dir = "ckpt"
             if not os.path.exists(pc_dir):
                 os.mkdir(pc_dir)
+            if not os.path.exists(ckpt_dir):
+                os.mkdir(ckpt_dir)
 
             np.save(
                 os.path.join(pc_dir, f"epoch_{epoch}.npy"),
                 torch.cat([sample_pts, radiance], dim=-1).detach().cpu().numpy(),
+            )
+
+            torch.save(
+                scene.radiance_field.state_dict(),
+                os.path.join(ckpt_dir, f"epoch_{epoch}.pth"),
             )
 
 

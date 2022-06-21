@@ -124,7 +124,7 @@ class VolumeRenderer(object):
         # compute pixel colors by evaluating the volume rendering equation
         pixel_rgb = self.integrator.integrate_along_rays(sigma, radiance, delta)
 
-        return pixel_rgb, pixel_to_render
+        return pixel_rgb, pixel_to_render, radiance, sample_pts
 
     def _generate_screen_coords(self) -> torch.Tensor:
         """

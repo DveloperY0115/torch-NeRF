@@ -5,7 +5,7 @@ A simple cubic query structure suitable for bounded scenes.
 import typing
 
 import torch
-from src.query_struct.query_struct_base import QueryStructBase
+from torch_nerf.src.query_struct.query_struct_base import QueryStructBase
 
 
 class QSCube(QueryStructBase):

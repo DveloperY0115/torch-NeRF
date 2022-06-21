@@ -142,3 +142,21 @@ def init_optimizer_and_scheduler(cfg: DictConfig, scene):
         )
 
     return optimizer, scheduler
+
+
+def init_objective_func(cfg: DictConfig) -> torch.nn.Module:
+    """
+    Initializes objective functions used to train neural radiance fields.
+
+    Args:
+        cfg (DictConfig): A config object holding flags required to construct
+            objective functions.
+
+    Returns:
+        loss (torch.nn.Module): An instance of torch.nn.Module.
+            Module that evaluates the value of objective function.
+    """
+    if cfg.objective.loss_type == "nerf_default":
+        return torch.nn.MSELoss()
+    else:
+        raise ValueError("Unsupported loss configuration.")

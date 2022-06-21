@@ -21,33 +21,33 @@ class NeRFBlenderDataset(data.Dataset):
     def __init__(
         self,
         root_dir: str,
-        dataset_type: str,
+        data_type: str,
     ):
         """
         Constructor of 'NeRFBlenderDataset'.
 
         Args:
             root_dir (str): A string indicating the root directory of the dataset.
-            dataset_type (str): A string indicating the type of the dataset.
+            data_type (str): A string indicating the type of the dataset.
         """
         # check arguments
-        dataset_types = ["train", "val", "test"]
-        if not dataset_type in dataset_types:
+        data_types = ["train", "val", "test"]
+        if not data_type in data_types:
             raise ValueError(
-                f"Unsupported dataset type. Expected one of {dataset_types}. Got {dataset_type}"
+                f"Unsupported dataset type. Expected one of {data_types}. Got {data_type}"
             )
 
         super().__init__()
 
         self._root_dir = root_dir
-        self._dataset_type = dataset_type
+        self._data_type = data_type
 
         (
             self._imgs,
             self._poses,
             self._camera_params,
             self._render_poses,
-        ) = load_blender_data(root_dir, dataset_type)
+        ) = load_blender_data(root_dir, data_type)
 
         self._img_height = self._camera_params[0]
         self._img_width = self._camera_params[1]

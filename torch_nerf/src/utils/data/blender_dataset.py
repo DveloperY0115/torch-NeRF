@@ -22,6 +22,7 @@ class NeRFBlenderDataset(data.Dataset):
         self,
         root_dir: str,
         data_type: str,
+        white_bg: bool = True,
     ):
         """
         Constructor of 'NeRFBlenderDataset'.
@@ -29,6 +30,7 @@ class NeRFBlenderDataset(data.Dataset):
         Args:
             root_dir (str): A string indicating the root directory of the dataset.
             data_type (str): A string indicating the type of the dataset.
+            white_bg (bool): A flag that determines whether to make background of images white.
         """
         # check arguments
         data_types = ["train", "val", "test"]
@@ -41,6 +43,7 @@ class NeRFBlenderDataset(data.Dataset):
 
         self._root_dir = root_dir
         self._data_type = data_type
+        self._white_bg = white_bg
 
         (
             self._imgs,
@@ -80,10 +83,16 @@ class NeRFBlenderDataset(data.Dataset):
             index (int): Index of the data to be retrieved.
 
         Returns:
-            A tuple of torch.Tensor instances each representing input images
+            A tuple of torch.Tensor instances each representing input RGB images
                 and camera extrinsic matrices.
         """
-        return self._imgs[index], self._poses[index]
+        img = torch.tensor(self._imgs[index])
+        pose = torch.tensor(self._poses[index])
+
+        if self._white_bg:
+            alpha = img[..., -1]
+            img[alpha == 0.0, :] = 1.0
+        return img[..., :-1], pose
 
     @property
     def img_height(self):

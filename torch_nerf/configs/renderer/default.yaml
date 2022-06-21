@@ -1,4 +1,7 @@
 integrator_type: quadrature
 sampler_type: stratified
+num_pixels: 8192
+num_samples: 128
 t_near: 2.0
 t_far: 6.0
+project_to_ndc: false

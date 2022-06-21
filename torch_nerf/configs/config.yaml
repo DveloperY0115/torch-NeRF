@@ -1,4 +1,5 @@
 defaults:
+  - cuda: default
   - data: nerf_synthetic
   - network: nerf_mlp
   - objective: nerf_default

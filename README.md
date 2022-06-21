@@ -16,6 +16,7 @@ cd torch-NeRF
 
 # Create virtual environment
 virtualenv venv -p=3.8
+source venv/bin/activate
 
 # Install dependencies
 pip3 install -r requirements.txt

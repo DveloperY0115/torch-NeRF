@@ -63,6 +63,7 @@ class VolumeRenderer(object):
         num_samples: int,
         project_to_ndc: bool,
         device: int,
+        num_ray_batch: int = None,
     ):
         """
         Renders the scene by querying underlying 3D inductive bias.
@@ -75,6 +76,7 @@ class VolumeRenderer(object):
                 sample pixels randomly.
             project_to_ndc (bool):
             device (int):
+            num_ray_batch (int): The number of ray batches.
 
         Returns:
             pixel_rgb (torch.Tensor): An instance of torch.Tensor of shape (num_pixels, 3).
@@ -113,16 +115,15 @@ class VolumeRenderer(object):
             num_samples,
         )
 
-        # load data to GPUs
-        sample_pts = sample_pts.to(device)
-        ray_dir = ray_dir.to(device)
-        delta = delta.to(device)
-
-        # query the scene to get density and radiance
-        sigma, radiance = scene.query_points(sample_pts, ray_dir)
-
-        # compute pixel colors by evaluating the volume rendering equation
-        pixel_rgb = self.integrator.integrate_along_rays(sigma, radiance, delta)
+        # render rays
+        pixel_rgb = self._render_ray_batches(
+            scene,
+            sample_pts,
+            ray_dir,
+            delta,
+            num_batch=1 if num_ray_batch is None else num_ray_batch,
+            device=device,
+        )
 
         return pixel_rgb, pixel_to_render
 
@@ -146,6 +147,48 @@ class VolumeRenderer(object):
         ).reshape(self.camera.img_height * self.camera.img_width, -1)
 
         return coords
+
+    def _render_ray_batches(
+        self,
+        scene,
+        sample_pts: torch.Tensor,
+        ray_dir: torch.Tensor,
+        delta: torch.Tensor,
+        num_batch: int,
+        device: int,
+    ) -> torch.Tensor:
+        """
+        Renders an image by dividing its pixels into small batches.
+
+        Args:
+            scene ():
+            sample_pts (torch.Tensor):
+            ray_dir (torch.Tensor):
+            delta (torch.Tensor):
+            num_batch (int):
+            device (int)
+
+        Returns:
+            pixel_rgb (torch.Tensor):
+        """
+        pixel_rgb = []
+
+        partitions = torch.linspace(0, sample_pts.shape[0], num_batch + 1, dtype=torch.long)
+
+        for start, end in zip(partitions[0::1], partitions[1::1]):
+            pts_batch = sample_pts[start:end, ...].to(device)
+            dir_batch = ray_dir[start:end, ...].to(device)
+            delta_batch = delta[start:end, ...].to(device)
+
+            # query the scene to get density and radiance
+            sigma_batch, radiance_batch = scene.query_points(pts_batch, dir_batch)
+
+            # compute pixel colors by evaluating the volume rendering equation
+            pixel_rgb.append(
+                self.integrator.integrate_along_rays(sigma_batch, radiance_batch, delta_batch),
+            )
+
+        return torch.cat(pixel_rgb, dim=0)
 
     @property
     def camera(self) -> cameras.PerspectiveCamera:

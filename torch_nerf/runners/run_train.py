@@ -7,6 +7,7 @@ sys.path.append(".")
 sys.path.append("..")
 
 import hydra
+from hydra.core.hydra_config import HydraConfig
 import numpy as np
 from omegaconf import DictConfig
 import torch
@@ -113,32 +114,33 @@ def visualize_train_scene(
 
     render_poses = dataset.render_poses
 
-    for view_idx, extrinsic in tqdm(enumerate(render_poses)):
-        # set the camera
-        renderer.camera = cameras.PerspectiveCamera(
-            {
-                "f_x": dataset.focal_length,
-                "f_y": dataset.focal_length,
-                "img_width": dataset.img_width,
-                "img_height": dataset.img_height,
-            },
-            extrinsic,
-            cfg.renderer.t_near,
-            cfg.renderer.t_far,
-        )
+    with torch.no_grad():
+        for view_idx, extrinsic in tqdm(enumerate(render_poses)):
+            # set the camera
+            renderer.camera = cameras.PerspectiveCamera(
+                {
+                    "f_x": dataset.focal_length,
+                    "f_y": dataset.focal_length,
+                    "img_width": dataset.img_width,
+                    "img_height": dataset.img_height,
+                },
+                extrinsic,
+                cfg.renderer.t_near,
+                cfg.renderer.t_far,
+            )
 
-        pixel_pred, _ = renderer.render_scene(
-            scene,
-            num_pixels=dataset.img_width * dataset.img_height,
-            num_samples=cfg.renderer.num_samples,
-            project_to_ndc=cfg.renderer.project_to_ndc,
-            device=torch.cuda.current_device(),
-        )
+            pixel_pred, _ = renderer.render_scene(
+                scene,
+                num_pixels=dataset.img_width * dataset.img_height,
+                num_samples=cfg.renderer.num_samples,
+                project_to_ndc=cfg.renderer.project_to_ndc,
+                device=torch.cuda.current_device(),
+            )
 
-        tvu.save_image(
-            pixel_pred,
-            os.path.join(save_dir, f"{str(view_idx).zfill(5)}.png"),
-        )
+            tvu.save_image(
+                pixel_pred,
+                os.path.join(save_dir, f"{str(view_idx).zfill(5)}.png"),
+            )
 
 
 @hydra.main(
@@ -164,7 +166,21 @@ def main(cfg: DictConfig) -> None:
             cfg, scene, renderer, dataset, loader, loss_func, optimizer, scheduler
         )
 
-        print(f"Loss (Train) {epoch}: {epoch_loss}")
+        print(f"Loss (Train) at epoch {epoch}: {epoch_loss}")
+
+        if (epoch + 1) % cfg.train_params.log.visualize_every == 0.0:
+            save_dir = os.path.join(
+                HydraConfig.get().runtime.output_dir,
+                f"vis/epoch_{epoch}",
+            )
+
+            visualize_train_scene(
+                cfg,
+                scene,
+                renderer,
+                dataset,
+                save_dir,
+            )
 
 
 if __name__ == "__main__":

@@ -95,16 +95,21 @@ class NeRFBlenderDataset(data.Dataset):
         return img[..., :-1], pose
 
     @property
-    def img_height(self):
+    def img_height(self) -> int:
         """Returns the height of images in the dataset."""
         return self._img_height
 
     @property
-    def img_width(self):
+    def img_width(self) -> int:
         """Returns the width of images in the dataset."""
         return self._img_width
 
     @property
-    def focal_length(self):
+    def focal_length(self) -> float:
         """Returns the focal length used for rendering images in the dataset."""
         return self._focal_length
+
+    @property
+    def render_poses(self) -> torch.Tensor:
+        """Returns the predefined poses to render the scene."""
+        return self._render_poses

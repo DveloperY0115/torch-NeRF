@@ -129,13 +129,19 @@ def visualize_train_scene(
                 cfg.renderer.t_far,
             )
 
+            num_total_pixel = dataset.img_width * dataset.img_height
             pixel_pred, _ = renderer.render_scene(
                 scene,
-                num_pixels=dataset.img_width * dataset.img_height,
+                num_pixels=num_total_pixel,
                 num_samples=cfg.renderer.num_samples,
                 project_to_ndc=cfg.renderer.project_to_ndc,
                 device=torch.cuda.current_device(),
+                num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
             )
+
+            # (H * W, C) -> (C, H, W)
+            pixel_pred = pixel_pred.reshape(dataset.img_height, dataset.img_width, -1)
+            pixel_pred = pixel_pred.permute(2, 0, 1)
 
             tvu.save_image(
                 pixel_pred,

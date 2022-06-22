@@ -17,7 +17,7 @@ from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 
 def init_cuda(cfg: DictConfig) -> None:
     """
-    Check availability of CUDA devices in the system and set the default device.
+    Checks availability of CUDA devices in the system and set the default device.
     """
     if torch.cuda.is_available():
         device_id = cfg.cuda.device_id

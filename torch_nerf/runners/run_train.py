@@ -45,7 +45,7 @@ def main(cfg: DictConfig) -> None:
             optimizer.zero_grad()
 
             # set the camera
-            camera = cameras.CameraBase(
+            camera = cameras.PerspectiveCamera(
                 {
                     "f_x": dataset.focal_length,
                     "f_y": dataset.focal_length,

@@ -29,7 +29,7 @@ class VolumeRenderer(object):
         self,
         integrator: integrators.IntegratorBase,
         sampler: ray_samplers.RaySamplerBase,
-        camera: typing.Optional[cameras.CameraBase] = None,
+        camera: typing.Optional[cameras.PerspectiveCamera] = None,
     ):
         """
         Constructor of class 'VolumeRenderer'.
@@ -148,7 +148,7 @@ class VolumeRenderer(object):
         return coords
 
     @property
-    def camera(self) -> cameras.CameraBase:
+    def camera(self) -> cameras.PerspectiveCamera:
         """Returns the current camera configuration."""
         return self._camera
 
@@ -171,6 +171,6 @@ class VolumeRenderer(object):
         return self._screen_coords
 
     @camera.setter
-    def camera(self, new_camera: cameras.CameraBase) -> None:
+    def camera(self, new_camera: cameras.PerspectiveCamera) -> None:
         self._camera = new_camera
         self._screen_coords = self._generate_screen_coords()  # update screen coordinate

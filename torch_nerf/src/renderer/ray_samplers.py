@@ -134,7 +134,7 @@ class RaySamplerBase(object):
     def generate_rays(
         self,
         pixel_coords: torch.Tensor,
-        camera: cameras.CameraBase,
+        camera: cameras.PerspectiveCamera,
         project_to_ndc: bool,
     ) -> RayBundle:
         """

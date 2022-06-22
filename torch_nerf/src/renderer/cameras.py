@@ -7,7 +7,7 @@ import typing
 import torch
 
 
-class CameraBase(object):
+class PerspectiveCamera(object):
     """
     Basic camera class.
 

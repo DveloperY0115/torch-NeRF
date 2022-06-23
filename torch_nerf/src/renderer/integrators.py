@@ -53,8 +53,10 @@ class QuadratureIntegrator(IntegratorBase):
                 difference between adjacent t's.
 
         Returns:
-            An instance of torch.Tensor of shape (N, 3) representing the final pixel
-            colors in RGB space.
+            rgb (torch.Tensor): An instance of torch.Tensor of shape (N, 3).
+                The final pixel colors in RGB space.
+            w_i (torch.Tensor): An instance of torch.Tensor of shape (N, S).
+                Weight of each sample point along rays.
         """
         sigma_delta = sigma * delta
 
@@ -72,11 +74,14 @@ class QuadratureIntegrator(IntegratorBase):
         # compute alpha: (1 - exp (- sigma_{i} * delta_{i}))
         alpha = 1.0 - torch.exp(-sigma_delta)
 
+        # compute weight - w_{i}
+        w_i = transmittance.unsqueeze(-1) * alpha.unsqueeze(-1)
+
         # compute numerical integral to determine pixel colors
         # C = sum_{i=1}^{S} T_{i} * alpha_{i} * c_{i}
         rgb = torch.sum(
-            transmittance.unsqueeze(-1) * alpha.unsqueeze(-1) * radiance,
+            w_i * radiance,
             dim=1,
         )
 
-        return rgb
+        return rgb, w_i

@@ -38,13 +38,17 @@ def save_ckpt(
         os.makedirs(ckpt_dir)
     ckpt_file = os.path.join(ckpt_dir, f"ckpt_{str(epoch).zfill(6)}.pth")
 
+    ckpt = {
+        "epoch": epoch,
+        "optimizer_state_dict": optimizer.state_dict(),
+        "scheduler_state_dict": scheduler.state_dict(),
+    }
+
+    for scene_type, scene in scenes.items():
+        ckpt[f"scene_{scene_type}"] = scene.radiance_field.state_dict()
+
     torch.save(
-        {
-            "epoch": epoch,
-            "scenes": scenes,
-            "optimizer_state_dict": optimizer.state_dict(),
-            "scheduler_state_dict": scheduler.state_dict(),
-        },
+        ckpt,
         ckpt_file,
     )
 
@@ -237,7 +241,7 @@ def visualize_train_scene(
 
             num_total_pixel = dataset.img_width * dataset.img_height
             if "fine" in scenes.keys():  # visualize "fine" scene
-                pixel_pred, _ = renderer.render_scene(
+                pixel_pred, _, _ = renderer.render_scene(
                     scenes["fine"],
                     num_pixels=num_total_pixel,
                     num_samples=cfg.renderer.num_samples_coarse + cfg.renderer.num_samples_fine,
@@ -246,7 +250,7 @@ def visualize_train_scene(
                     num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
                 )
             else:  # visualize "coarse" scene
-                pixel_pred, _ = renderer.render_scene(
+                pixel_pred, _, _ = renderer.render_scene(
                     scenes["coarse"],
                     num_pixels=num_total_pixel,
                     num_samples=cfg.renderer.num_samples_coarse,
@@ -306,7 +310,7 @@ def main(cfg: DictConfig) -> None:
             cfg, scenes, renderer, dataset, loader, loss_func, optimizer, scheduler
         )
         for loss_name, value in losses.items():
-            writer.add_scalar(f"Loss/{loss_name}", value)
+            writer.add_scalar(f"Loss/{loss_name}", value, epoch)
 
         # save checkpoint
         if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:

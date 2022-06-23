@@ -20,10 +20,7 @@ def main():
         f"{args.vid_title}.mp4",
         format="FFMPEG",
         mode="I",
-        fps=10,
-        codec="h264_vaapi",
-        output_params=["-vaapi_device", "/dev/dri/renderD128", "-vf", "format=gray|nv12,hwupload"],
-        pixelformat="vaapi_vld",
+        fps=5,
     )
 
     for img in imgs:

@@ -137,7 +137,7 @@ def train_one_epoch(
         )
 
         # forward prop. coarse network
-        coarse_pred, coarse_indices = renderer.render_scene(
+        coarse_pred, coarse_indices, coarse_weights = renderer.render_scene(
             scenes["coarse"],
             num_pixels=cfg.renderer.num_pixels,
             num_samples=cfg.renderer.num_samples_coarse,
@@ -148,7 +148,7 @@ def train_one_epoch(
 
         # forward prop. fine network
         if "fine" in scenes.keys():
-            fine_pred, fine_indices = renderer.render_scene(
+            fine_pred, fine_indices, _ = renderer.render_scene(
                 scenes["fine"],
                 num_pixels=cfg.renderer.num_pixels,
                 num_samples=cfg.renderer.num_samples_coarse + cfg.renderer.num_samples_fine,

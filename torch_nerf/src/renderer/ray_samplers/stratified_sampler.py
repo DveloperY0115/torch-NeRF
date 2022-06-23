@@ -15,7 +15,7 @@ class StratifiedSampler(RaySamplerBase):
         self,
         ray_bundle: RayBundle,
         num_sample: int,
-        cdf: torch.Tensor = None,
+        weights: torch.Tensor = None,
     ) -> torch.Tensor:
         """
         Samples points along rays.
@@ -34,9 +34,9 @@ class StratifiedSampler(RaySamplerBase):
             ray_bundle (RayBundle): An instance of RayBundle containing ray origin, ray direction,
                 the nearest/farthest ray distances.
             num_sample (int): Number of samples sampled along each ray.
-            cdf (torch.Tensor): An instance of torch.Tensor of shape (num_sample, 1).
-                If provided, the samples are sampled from the distribution represented by it
-                using the inverse sampling technique.
+            weights (torch.Tensor): An instance of torch.Tensor of shape (num_ray, num_sample).
+                If provided, the samples are sampled using the inverse sampling technique
+                from the distribution represented by the CDF derived from it.
 
         Returns:
             sample_pts (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
@@ -47,13 +47,13 @@ class StratifiedSampler(RaySamplerBase):
             delta (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing the
                 difference between adjacent t's.
         """
-        if cdf:
-            if not isinstance(cdf, torch.Tensor):
-                raise ValueError(f"Expected an instance of torch.Tensor. Got {type(cdf)}.")
-            if cdf.shape[0] != num_sample:
+        if weights:
+            if not isinstance(weights, torch.Tensor):
+                raise ValueError(f"Expected an instance of torch.Tensor. Got {type(weights)}.")
+            if weights.shape[0] != num_sample:
                 raise ValueError(
                     "Expected the same number of bins from where each sample point is drawn. "
-                    f"Got {num_sample}, {cdf.shape[0]}, respectively."
+                    f"Got {num_sample}, {weights.shape[0]}, respectively."
                 )
 
         # equally partition the interval [t_near, t_far]
@@ -68,7 +68,7 @@ class StratifiedSampler(RaySamplerBase):
         )
         partition_size = (ray_bundle.t_far - ray_bundle.t_near) / num_sample
 
-        if cdf:  # sample from the given distribution
+        if weights:  # sample from the given distribution
             raise NotImplementedError("TODO: Necessary for implementing hierarchical sampling!")
         else:  # sample from the uniform distribution within each interval
             t_samples = t_bins + partition_size * torch.rand_like(t_bins)

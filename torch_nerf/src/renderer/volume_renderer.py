@@ -64,7 +64,7 @@ class VolumeRenderer(object):
         project_to_ndc: bool,
         device: int,
         pixel_indices: typing.Optional[torch.Tensor] = None,
-        cdf: typing.Optional[torch.Tensor] = None,
+        weights: typing.Optional[torch.Tensor] = None,
         num_ray_batch: int = None,
     ):
         """
@@ -79,7 +79,7 @@ class VolumeRenderer(object):
             project_to_ndc (bool):
             device (int):
             pixel_indices (torch.Tensor):
-            cdf (torch.Tensor):
+            weights (torch.Tensor):
             num_ray_batch (int): The number of ray batches.
 
         Returns:
@@ -87,6 +87,8 @@ class VolumeRenderer(object):
                 The final pixel colors of rendered image lying in RGB color space.
             pixel_to_render (torch.Tensor): An instance of torch.Tensor of shape (num_pixels, ).
                 The array holding index of pixels rendered.
+            weights (torch.Tensor): An instance of torch.Tensor of shape (num_pixels, num_samples).
+                Weight of each sample point along rays.
         """
         if not isinstance(num_pixels, int):
             raise ValueError(f"Expected variable of type int. Got {type(num_pixels)}.")
@@ -120,11 +122,11 @@ class VolumeRenderer(object):
         sample_pts, ray_dir, delta = self.sampler.sample_along_rays(
             ray_bundle,
             num_samples,
-            cdf=cdf,
+            weights=weights,
         )
 
         # render rays
-        pixel_rgb = self._render_ray_batches(
+        pixel_rgb, weights = self._render_ray_batches(
             scene,
             sample_pts,
             ray_dir,
@@ -133,7 +135,7 @@ class VolumeRenderer(object):
             device=device,
         )
 
-        return pixel_rgb, pixel_to_render
+        return pixel_rgb, pixel_to_render, weights
 
     def _generate_screen_coords(self) -> torch.Tensor:
         """
@@ -179,7 +181,8 @@ class VolumeRenderer(object):
         Returns:
             pixel_rgb (torch.Tensor):
         """
-        pixel_rgb = []
+        rgb = []
+        weights = []
 
         partitions = torch.linspace(0, sample_pts.shape[0], num_batch + 1, dtype=torch.long)
 
@@ -192,11 +195,13 @@ class VolumeRenderer(object):
             sigma_batch, radiance_batch = scene.query_points(pts_batch, dir_batch)
 
             # compute pixel colors by evaluating the volume rendering equation
-            pixel_rgb.append(
-                self.integrator.integrate_along_rays(sigma_batch, radiance_batch, delta_batch),
+            rgb_batch, weights_batch = self.integrator.integrate_along_rays(
+                sigma_batch, radiance_batch, delta_batch
             )
+            rgb.append(rgb_batch)
+            weights.append(weights_batch)
 
-        return torch.cat(pixel_rgb, dim=0)
+        return torch.cat(rgb, dim=0), torch.cat(weights, dim=0)
 
     @property
     def camera(self) -> cameras.PerspectiveCamera:

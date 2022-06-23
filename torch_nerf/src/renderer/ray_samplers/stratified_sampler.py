@@ -47,14 +47,9 @@ class StratifiedSampler(RaySamplerBase):
             delta (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing the
                 difference between adjacent t's.
         """
-        if weights:
+        if not weights is None:
             if not isinstance(weights, torch.Tensor):
                 raise ValueError(f"Expected an instance of torch.Tensor. Got {type(weights)}.")
-            if weights.shape[0] != num_sample:
-                raise ValueError(
-                    "Expected the same number of bins from where each sample point is drawn. "
-                    f"Got {num_sample}, {weights.shape[0]}, respectively."
-                )
 
         # equally partition the interval [t_near, t_far]
         t_bins = (

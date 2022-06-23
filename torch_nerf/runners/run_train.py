@@ -17,6 +17,37 @@ import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.runners.runner_utils as runner_utils
 
 
+def load_ckpt(
+    ckpt_file,
+    scene,
+    optimizer,
+    scheduler,
+) -> int:
+    """
+    Loads the checkpoint.
+
+    Args:
+        scene ():
+        optimizer ():
+        scheduler ():
+
+    Returns:
+        epoch: The epoch from where training continues.
+    """
+    epoch = 0
+
+    if ckpt_file is None or not os.path.exists(ckpt_file):
+        print("Checkpoint file not found.")
+        return epoch
+
+    # TODO: Update the code after writing code for checkpointing
+    ckpt = torch.load(ckpt_file, map_location="cpu")
+    scene.radiance_field.load_state_dict(ckpt)
+    print("Radiance field weight loaded.")
+    print("TODO: Update codes for checkpointing")
+    return epoch
+
+
 def train_one_epoch(
     cfg,
     scene,

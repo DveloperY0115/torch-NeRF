@@ -127,6 +127,7 @@ def visualize_train_scene(
     scene,
     renderer,
     dataset,
+    loader,
     save_dir: str,
 ):
     """
@@ -143,10 +144,18 @@ def visualize_train_scene(
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
 
+    pred_img_dir = os.path.join(save_dir, "pred_imgs")
+    if not os.path.exists(pred_img_dir):
+        os.mkdir(pred_img_dir)
+
     render_poses = dataset.render_poses
 
     with torch.no_grad():
-        for view_idx, extrinsic in tqdm(enumerate(render_poses)):
+        # for view_idx, extrinsic in tqdm(enumerate(render_poses)):
+        for view_idx, batch in tqdm(enumerate(loader)):
+            _, extrinsic = batch
+            extrinsic = extrinsic.squeeze()
+
             # set the camera
             renderer.camera = cameras.PerspectiveCamera(
                 {
@@ -176,7 +185,7 @@ def visualize_train_scene(
 
             tvu.save_image(
                 pixel_pred,
-                os.path.join(save_dir, f"{str(view_idx).zfill(5)}.png"),
+                os.path.join(pred_img_dir, f"{str(view_idx).zfill(5)}.png"),
             )
 
 
@@ -197,12 +206,19 @@ def main(cfg: DictConfig) -> None:
     optimizer, scheduler = runner_utils.init_optimizer_and_scheduler(cfg, scene)
     loss_func = runner_utils.init_objective_func(cfg)
 
+    # load if checkpoint exists
+    load_ckpt(
+        cfg.train_params.ckpt.path,
+        scene,
+        optimizer,
+        scheduler,
+    )
+
     # train the model
     for epoch in tqdm(range(cfg.train_params.optim.num_iter // len(dataset))):
         epoch_loss = train_one_epoch(
             cfg, scene, renderer, dataset, loader, loss_func, optimizer, scheduler
         )
-
         print(f"Loss (Train) at epoch {epoch}: {epoch_loss}")
 
         if (epoch + 1) % cfg.train_params.log.visualize_every == 0.0:
@@ -216,6 +232,7 @@ def main(cfg: DictConfig) -> None:
                 scene,
                 renderer,
                 dataset,
+                loader,
                 save_dir,
             )
 

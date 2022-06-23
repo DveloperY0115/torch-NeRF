@@ -21,7 +21,7 @@ import torch_nerf.runners.runner_utils as runner_utils
 def save_ckpt(
     ckpt_dir: str,
     epoch: int,
-    scene,
+    scenes,
     optimizer,
     scheduler,
 ) -> None:
@@ -30,7 +30,7 @@ def save_ckpt(
 
     Args:
         epoch (int):
-        scene ():
+        scene (Dict):
         optimizer ():
         scheduler ():
     """
@@ -113,6 +113,8 @@ def train_one_epoch(
         )
 
     total_loss = 0.0
+    total_coarse_loss = 0.0
+    total_fine_loss = 0.0
 
     for batch in loader:
         pixel_gt, extrinsic = batch
@@ -145,6 +147,7 @@ def train_one_epoch(
             device=torch.cuda.current_device(),
         )
         loss = loss_func(pixel_gt[coarse_indices, ...].cuda(), coarse_pred)
+        total_coarse_loss += loss.item()
 
         # forward prop. fine network
         if "fine" in scenes.keys():
@@ -153,9 +156,12 @@ def train_one_epoch(
                 num_pixels=cfg.renderer.num_pixels,
                 num_samples=cfg.renderer.num_samples_coarse + cfg.renderer.num_samples_fine,
                 project_to_ndc=cfg.renderer.project_to_ndc,
+                weights=coarse_weights,
                 device=torch.cuda.current_device(),
             )
-            loss += loss_func(pixel_gt[fine_indices, ...].cuda(), fine_pred)
+            fine_loss = loss_func(pixel_gt[fine_indices, ...].cuda(), fine_pred)
+            total_fine_loss += fine_loss.item()
+            loss += fine_loss
 
         total_loss += loss.item()
 
@@ -165,9 +171,16 @@ def train_one_epoch(
         if not scheduler is None:
             scheduler.step()
 
+    # compute average loss
     total_loss /= len(loader)
+    total_coarse_loss /= len(loader)
+    total_fine_loss /= len(loader)
 
-    return total_loss
+    return {
+        "total_loss": total_loss,
+        "total_coarse_loss": total_coarse_loss,
+        "total_fine_loss": total_fine_loss,
+    }
 
 
 def visualize_train_scene(
@@ -284,10 +297,11 @@ def main(cfg: DictConfig) -> None:
     # train the model
     for epoch in tqdm(range(cfg.train_params.optim.num_iter // len(dataset))):
         # train
-        epoch_loss = train_one_epoch(
+        losses = train_one_epoch(
             cfg, scenes, renderer, dataset, loader, loss_func, optimizer, scheduler
         )
-        writer.add_scalar("Loss/Train", epoch_loss)
+        for loss_name, value in losses.items():
+            writer.add_scalar(f"Loss/{loss_name}", value)
 
         # save checkpoint
         if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:

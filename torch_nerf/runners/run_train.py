@@ -41,6 +41,7 @@ def save_ckpt(
     torch.save(
         {
             "epoch": epoch,
+            "scenes": scenes,
             "optimizer_state_dict": optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
         },

@@ -4,3 +4,7 @@ optim:
   scheduler_type: exp
   init_lr: 0.0005
   end_lr: 0.00005
+log:
+  visualize_every: 50
+ckpt:
+  path: null

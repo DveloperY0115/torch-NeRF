@@ -11,6 +11,7 @@ from hydra.core.hydra_config import HydraConfig
 import numpy as np
 from omegaconf import DictConfig
 import torch
+from torch.utils.tensorboard import SummaryWriter
 import torchvision.utils as tvu
 from tqdm import tqdm
 import torch_nerf.src.renderer.cameras as cameras
@@ -196,6 +197,9 @@ def visualize_train_scene(
 )
 def main(cfg: DictConfig) -> None:
     """The entry point of train."""
+    # identify log directory
+    log_dir = HydraConfig.get().runtime.output_dir
+
     # configure device
     runner_utils.init_cuda(cfg)
 
@@ -214,16 +218,21 @@ def main(cfg: DictConfig) -> None:
         scheduler,
     )
 
+    # initialize writer
+    writer = SummaryWriter(log_dir=log_dir)
+
     # train the model
     for epoch in tqdm(range(cfg.train_params.optim.num_iter // len(dataset))):
+        # train
         epoch_loss = train_one_epoch(
             cfg, scene, renderer, dataset, loader, loss_func, optimizer, scheduler
         )
-        print(f"Loss (Train) at epoch {epoch}: {epoch_loss}")
+        writer.add_scalar("Loss/Train", epoch_loss)
 
+        # log
         if (epoch + 1) % cfg.train_params.log.visualize_every == 0.0:
             save_dir = os.path.join(
-                HydraConfig.get().runtime.output_dir,
+                log_dir,
                 f"vis/epoch_{epoch}",
             )
 
@@ -235,6 +244,8 @@ def main(cfg: DictConfig) -> None:
                 loader,
                 save_dir,
             )
+
+    writer.flush()
 
 
 if __name__ == "__main__":

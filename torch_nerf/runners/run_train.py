@@ -71,7 +71,6 @@ def load_ckpt(
         print("Checkpoint file not found.")
         return epoch
 
-    # TODO: Update the code after writing code for checkpointing
     ckpt = torch.load(ckpt_file, map_location="cpu")
     scene.radiance_field.load_state_dict(ckpt)
     print("Radiance field weight loaded.")
@@ -81,13 +80,13 @@ def load_ckpt(
 
 def train_one_epoch(
     cfg,
-    scene,
+    scenes,
     renderer,
     dataset,
     loader,
     loss_func,
     optimizer,
-    scheduler,
+    scheduler=None,
 ) -> float:
     """
     Trains the scene for one epoch.
@@ -102,10 +101,17 @@ def train_one_epoch(
         loss_func (torch.nn.Module): Objective function to be optimized.
         optimizer (torch.optim.Optimizer): Optimizer.
         scheduler (torch.optim.lr_scheduler.ExponentialLR): Learning rate scheduler.
+            Set to None by default.
 
     Returns:
         total_loss (float): The average of losses computed over an epoch.
     """
+    if not "coarse" in scenes.keys():
+        raise ValueError(
+            "At least a coarse representation the scene is required for training. "
+            f"Got a dictionary whose keys are {scenes.keys()}."
+        )
+
     total_loss = 0.0
 
     for batch in loader:
@@ -130,16 +136,27 @@ def train_one_epoch(
             cfg.renderer.t_far,
         )
 
-        pixel_pred, pixel_indices = renderer.render_scene(
-            scene,
+        # forward prop. coarse network
+        coarse_pred, coarse_indices = renderer.render_scene(
+            scenes["coarse"],
             num_pixels=cfg.renderer.num_pixels,
-            num_samples=cfg.renderer.num_samples,
+            num_samples=cfg.renderer.num_samples_coarse,
             project_to_ndc=cfg.renderer.project_to_ndc,
             device=torch.cuda.current_device(),
         )
+        loss = loss_func(pixel_gt[coarse_indices, ...].cuda(), coarse_pred)
 
-        # compute L2 loss
-        loss = loss_func(pixel_gt[pixel_indices, ...].cuda(), pixel_pred)
+        # forward prop. fine network
+        if "fine" in scenes.keys():
+            fine_pred, fine_indices = renderer.render_scene(
+                scenes["fine"],
+                num_pixels=cfg.renderer.num_pixels,
+                num_samples=cfg.renderer.num_samples_coarse + cfg.renderer.num_samples_fine,
+                project_to_ndc=cfg.renderer.project_to_ndc,
+                device=torch.cuda.current_device(),
+            )
+            loss += loss_func(pixel_gt[fine_indices, ...].cuda(), fine_pred)
+
         total_loss += loss.item()
 
         # step
@@ -155,7 +172,7 @@ def train_one_epoch(
 
 def visualize_train_scene(
     cfg,
-    scene,
+    scenes,
     renderer,
     dataset,
     loader,
@@ -167,7 +184,7 @@ def visualize_train_scene(
     Args:
         cfg (DictConfig): A config object holding parameters required
             to setup scene representation.
-        scene (QueryStruct): Neural scene representation to be optimized.
+        scenes (Dict): A dictionary of neural scene representation(s).
         renderer (VolumeRenderer): Volume renderer used to render the scene.
         dataset (torch.utils.data.Dataset): Dataset for training data.
         save_dir (str): Directory to store render outputs.
@@ -201,14 +218,24 @@ def visualize_train_scene(
             )
 
             num_total_pixel = dataset.img_width * dataset.img_height
-            pixel_pred, _ = renderer.render_scene(
-                scene,
-                num_pixels=num_total_pixel,
-                num_samples=cfg.renderer.num_samples,
-                project_to_ndc=cfg.renderer.project_to_ndc,
-                device=torch.cuda.current_device(),
-                num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
-            )
+            if "fine" in scenes.keys():  # visualize "fine" scene
+                pixel_pred, _ = renderer.render_scene(
+                    scenes["fine"],
+                    num_pixels=num_total_pixel,
+                    num_samples=cfg.renderer.num_samples_coarse + cfg.renderer.num_samples_fine,
+                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    device=torch.cuda.current_device(),
+                    num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
+                )
+            else:  # visualize "coarse" scene
+                pixel_pred, _ = renderer.render_scene(
+                    scenes["coarse"],
+                    num_pixels=num_total_pixel,
+                    num_samples=cfg.renderer.num_samples_coarse,
+                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    device=torch.cuda.current_device(),
+                    num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
+                )
 
             # (H * W, C) -> (C, H, W)
             pixel_pred = pixel_pred.reshape(dataset.img_height, dataset.img_width, -1)
@@ -236,14 +263,14 @@ def main(cfg: DictConfig) -> None:
     # initialize data, renderer, and scene
     dataset, loader = runner_utils.init_dataset_and_loader(cfg)
     renderer = runner_utils.init_renderer(cfg)
-    scene = runner_utils.init_scene_repr(cfg)
-    optimizer, scheduler = runner_utils.init_optimizer_and_scheduler(cfg, scene)
+    scenes = runner_utils.init_scene_repr(cfg)
+    optimizer, scheduler = runner_utils.init_optimizer_and_scheduler(cfg, scenes)
     loss_func = runner_utils.init_objective_func(cfg)
 
     # load if checkpoint exists
     load_ckpt(
         cfg.train_params.ckpt.path,
-        scene,
+        scenes,
         optimizer,
         scheduler,
     )
@@ -258,7 +285,7 @@ def main(cfg: DictConfig) -> None:
     for epoch in tqdm(range(cfg.train_params.optim.num_iter // len(dataset))):
         # train
         epoch_loss = train_one_epoch(
-            cfg, scene, renderer, dataset, loader, loss_func, optimizer, scheduler
+            cfg, scenes, renderer, dataset, loader, loss_func, optimizer, scheduler
         )
         writer.add_scalar("Loss/Train", epoch_loss)
 
@@ -283,7 +310,7 @@ def main(cfg: DictConfig) -> None:
 
             visualize_train_scene(
                 cfg,
-                scene,
+                scenes,
                 renderer,
                 dataset,
                 loader,

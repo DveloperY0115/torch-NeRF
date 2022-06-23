@@ -144,27 +144,43 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
         raise ValueError("Unsupported scene representation.")
 
 
-def init_optimizer_and_scheduler(cfg: DictConfig, scene):
+def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
     """
     Initializes the optimizer and learning rate scheduler used for training.
 
     Args:
         cfg (DictConfig): A config object holding parameters required
             to setup optimizer and learning rate scheduler.
-        scene (QueryStruct): A scene representation holding the neural network(s)
-            to be optimized.
+        scenes (Dict): A dictionary containing neural scene representation(s).
 
     Returns:
-
+        optimizer ():
+        scheduler ():
     """
+    if not "coarse" in scenes.keys():
+        raise ValueError(
+            "At least a coarse representation the scene is required for training. "
+            f"Got a dictionary whose keys are {scenes.keys()}."
+        )
+
     optimizer = None
     scheduler = None
 
+    # ==============================================================================
+    # configure optimizer
     if cfg.train_params.optim.optim_type == "adam":
         optimizer = torch.optim.Adam(
-            scene.radiance_field.parameters(),
+            scenes["coarse"].radiance_field.parameters(),
             lr=cfg.train_params.optim.init_lr,
         )  # TODO: A scene may contain two or more networks!
+
+    if "fine" in scenes.keys():
+        optimizer.add_param_group(
+            {
+                "params": scenes["fine"].radiance_field.parameters(),
+            }
+        )
+    # ==============================================================================
 
     if cfg.train_params.optim.scheduler_type == "exp":
         # compute decay rate

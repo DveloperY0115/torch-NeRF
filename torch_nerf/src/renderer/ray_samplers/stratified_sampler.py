@@ -83,3 +83,37 @@ class StratifiedSampler(RaySamplerBase):
         sample_pts = ray_origin + t_samples.unsqueeze(-1) * ray_dir
 
         return sample_pts, ray_dir, delta
+
+    def _create_t_bins(
+        self,
+        t_near: float,
+        t_far: float,
+        num_samples: int,
+        num_rays: int,
+    ) -> typing.Tuple[torch.Tensor, float]:
+        """
+        Generates a partition of t's.
+
+        Args:
+            t_start (float):
+            t_end (float):
+            num_samples (int):
+            num_rays (int):
+
+        Returns:
+            t_bins (torch.Tensor): An instance of torch.Tensor of shape (num_rays, num_samples).
+                The equally subdivided intervals of t's.
+            partition_size (float): The length of each interval.
+        """
+        t_bins = (
+            torch.linspace(
+                t_near,
+                t_far,
+                num_samples + 1,
+            )[:-1]
+            .unsqueeze(0)
+            .expand(num_rays, -1)
+        )
+        partition_size = (t_far - t_near) / num_samples
+
+        return t_bins, partition_size

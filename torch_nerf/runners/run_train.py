@@ -215,6 +215,9 @@ def visualize_train_scene(
     with torch.no_grad():
         # for view_idx, extrinsic in tqdm(enumerate(render_poses)):
         for view_idx, batch in tqdm(enumerate(loader)):
+            if view_idx >= num_imgs:
+                break
+
             _, extrinsic = batch
             extrinsic = extrinsic.squeeze()
 

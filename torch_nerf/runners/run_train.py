@@ -249,7 +249,10 @@ def main(cfg: DictConfig) -> None:
     )
 
     # initialize writer
-    writer = SummaryWriter(log_dir=log_dir)
+    tb_log_dir = os.path.join(log_dir, "tensorboard")
+    if not os.path.exists(tb_log_dir):
+        os.mkdir(tb_log_dir)
+    writer = SummaryWriter(log_dir=tb_log_dir)
 
     # train the model
     for epoch in tqdm(range(cfg.train_params.optim.num_iter // len(dataset))):

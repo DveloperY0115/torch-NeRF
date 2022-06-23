@@ -1,5 +1,5 @@
 optim:
-  num_iter: 200000
+  num_iter: 300000
   optim_type: adam
   scheduler_type: exp
   init_lr: 0.0005

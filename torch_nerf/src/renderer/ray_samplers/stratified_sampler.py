@@ -63,7 +63,7 @@ class StratifiedSampler(RaySamplerBase):
         )
         partition_size = (ray_bundle.t_far - ray_bundle.t_near) / num_sample
 
-        if weights:  # sample from the given distribution
+        if not weights is None:  # sample from the given distribution
             raise NotImplementedError("TODO: Necessary for implementing hierarchical sampling!")
         else:  # sample from the uniform distribution within each interval
             t_samples = t_bins + partition_size * torch.rand_like(t_bins)

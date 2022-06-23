@@ -75,12 +75,12 @@ class QuadratureIntegrator(IntegratorBase):
         alpha = 1.0 - torch.exp(-sigma_delta)
 
         # compute weight - w_{i}
-        w_i = transmittance.unsqueeze(-1) * alpha.unsqueeze(-1)
+        w_i = transmittance * alpha
 
         # compute numerical integral to determine pixel colors
         # C = sum_{i=1}^{S} T_{i} * alpha_{i} * c_{i}
         rgb = torch.sum(
-            w_i * radiance,
+            w_i.unsqueeze(-1) * radiance,
             dim=1,
         )
 

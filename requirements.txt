@@ -10,6 +10,7 @@ gpustat==0.6.0
 hydra-core==1.2.0
 idna==3.3
 imageio==2.19.3
+imageio-ffmpeg==0.4.7
 importlib-resources==5.8.0
 isort==5.10.1
 lazy-object-proxy==1.7.1

@@ -106,11 +106,13 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
             to setup scene representation.
 
     Returns:
-        scene (QueryStruct): An instance of derived class of QueryStructBase.
-            The scene representation.
+        scenes (Dict): A dictionary containing instances of subclasses of QueryStructBase.
+            It contains two separate scene representations each associated with
+            a key 'coarse' and 'fine', respectively.
     """
     if cfg.query_struct.type == "cube":
-        radiance_field = network.NeRFMLP(
+        # initialize coarse network
+        coarse_network = network.NeRFMLP(
             2 * cfg.signal_encoder.coord_encode_level * cfg.network.pos_dim,
             2 * cfg.signal_encoder.dir_encode_level * cfg.network.view_dir_dim,
         ).to(cfg.cuda.device_id)
@@ -122,12 +124,22 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
             cfg.network.view_dir_dim,
             cfg.signal_encoder.dir_encode_level,
         )
-        scene = qs.QSCube(
-            radiance_field,
+        coarse_scene = qs.QSCube(
+            coarse_network,
             {"coord_enc": coord_enc, "dir_enc": dir_enc},
         )
 
-        return scene
+        # initialize fine network
+        fine_network = network.NeRFMLP(
+            2 * cfg.signal_encoder.coord_encode_level * cfg.network.pos_dim,
+            2 * cfg.signal_encoder.dir_encode_level * cfg.network.view_dir_dim,
+        ).to(cfg.cuda.device_id)
+        fine_scene = qs.QSCube(
+            fine_network,
+            {"coord_enc": coord_enc, "dir_enc": dir_enc},
+        )
+
+        return {"coarse": coarse_scene, "fine": fine_scene}
     else:
         raise ValueError("Unsupported scene representation.")
 

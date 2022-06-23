@@ -11,21 +11,82 @@ from hydra.core.hydra_config import HydraConfig
 import numpy as np
 from omegaconf import DictConfig
 import torch
+from torch.utils.tensorboard import SummaryWriter
 import torchvision.utils as tvu
 from tqdm import tqdm
 import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.runners.runner_utils as runner_utils
 
 
+def save_ckpt(
+    ckpt_dir: str,
+    epoch: int,
+    scenes,
+    optimizer,
+    scheduler,
+) -> None:
+    """
+    Saves the checkpoint.
+
+    Args:
+        epoch (int):
+        scene (Dict):
+        optimizer ():
+        scheduler ():
+    """
+    if not os.path.exists(ckpt_dir):
+        os.makedirs(ckpt_dir)
+    ckpt_file = os.path.join(ckpt_dir, f"ckpt_{str(epoch).zfill(6)}.pth")
+
+    torch.save(
+        {
+            "epoch": epoch,
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict(),
+        },
+        ckpt_file,
+    )
+
+
+def load_ckpt(
+    ckpt_file,
+    scene,
+    optimizer,
+    scheduler,
+) -> int:
+    """
+    Loads the checkpoint.
+
+    Args:
+        scene ():
+        optimizer ():
+        scheduler ():
+
+    Returns:
+        epoch: The epoch from where training continues.
+    """
+    epoch = 0
+
+    if ckpt_file is None or not os.path.exists(ckpt_file):
+        print("Checkpoint file not found.")
+        return epoch
+
+    ckpt = torch.load(ckpt_file, map_location="cpu")
+    scene.radiance_field.load_state_dict(ckpt)
+    print("Radiance field weight loaded.")
+    print("TODO: Update codes for checkpointing")
+    return epoch
+
+
 def train_one_epoch(
     cfg,
-    scene,
+    scenes,
     renderer,
     dataset,
     loader,
     loss_func,
     optimizer,
-    scheduler,
+    scheduler=None,
 ) -> float:
     """
     Trains the scene for one epoch.
@@ -40,11 +101,20 @@ def train_one_epoch(
         loss_func (torch.nn.Module): Objective function to be optimized.
         optimizer (torch.optim.Optimizer): Optimizer.
         scheduler (torch.optim.lr_scheduler.ExponentialLR): Learning rate scheduler.
+            Set to None by default.
 
     Returns:
         total_loss (float): The average of losses computed over an epoch.
     """
+    if not "coarse" in scenes.keys():
+        raise ValueError(
+            "At least a coarse representation the scene is required for training. "
+            f"Got a dictionary whose keys are {scenes.keys()}."
+        )
+
     total_loss = 0.0
+    total_coarse_loss = 0.0
+    total_fine_loss = 0.0
 
     for batch in loader:
         pixel_gt, extrinsic = batch
@@ -68,16 +138,31 @@ def train_one_epoch(
             cfg.renderer.t_far,
         )
 
-        pixel_pred, pixel_indices = renderer.render_scene(
-            scene,
+        # forward prop. coarse network
+        coarse_pred, coarse_indices, coarse_weights = renderer.render_scene(
+            scenes["coarse"],
             num_pixels=cfg.renderer.num_pixels,
-            num_samples=cfg.renderer.num_samples,
+            num_samples=cfg.renderer.num_samples_coarse,
             project_to_ndc=cfg.renderer.project_to_ndc,
             device=torch.cuda.current_device(),
         )
+        loss = loss_func(pixel_gt[coarse_indices, ...].cuda(), coarse_pred)
+        total_coarse_loss += loss.item()
 
-        # compute L2 loss
-        loss = loss_func(pixel_gt[pixel_indices, ...].cuda(), pixel_pred)
+        # forward prop. fine network
+        if "fine" in scenes.keys():
+            fine_pred, fine_indices, _ = renderer.render_scene(
+                scenes["fine"],
+                num_pixels=cfg.renderer.num_pixels,
+                num_samples=cfg.renderer.num_samples_coarse + cfg.renderer.num_samples_fine,
+                project_to_ndc=cfg.renderer.project_to_ndc,
+                weights=coarse_weights,
+                device=torch.cuda.current_device(),
+            )
+            fine_loss = loss_func(pixel_gt[fine_indices, ...].cuda(), fine_pred)
+            total_fine_loss += fine_loss.item()
+            loss += fine_loss
+
         total_loss += loss.item()
 
         # step
@@ -86,16 +171,24 @@ def train_one_epoch(
         if not scheduler is None:
             scheduler.step()
 
+    # compute average loss
     total_loss /= len(loader)
+    total_coarse_loss /= len(loader)
+    total_fine_loss /= len(loader)
 
-    return total_loss
+    return {
+        "total_loss": total_loss,
+        "total_coarse_loss": total_coarse_loss,
+        "total_fine_loss": total_fine_loss,
+    }
 
 
 def visualize_train_scene(
     cfg,
-    scene,
+    scenes,
     renderer,
     dataset,
+    loader,
     save_dir: str,
 ):
     """
@@ -104,7 +197,7 @@ def visualize_train_scene(
     Args:
         cfg (DictConfig): A config object holding parameters required
             to setup scene representation.
-        scene (QueryStruct): Neural scene representation to be optimized.
+        scenes (Dict): A dictionary of neural scene representation(s).
         renderer (VolumeRenderer): Volume renderer used to render the scene.
         dataset (torch.utils.data.Dataset): Dataset for training data.
         save_dir (str): Directory to store render outputs.
@@ -112,10 +205,18 @@ def visualize_train_scene(
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
 
+    pred_img_dir = os.path.join(save_dir, "pred_imgs")
+    if not os.path.exists(pred_img_dir):
+        os.mkdir(pred_img_dir)
+
     render_poses = dataset.render_poses
 
     with torch.no_grad():
-        for view_idx, extrinsic in tqdm(enumerate(render_poses)):
+        # for view_idx, extrinsic in tqdm(enumerate(render_poses)):
+        for view_idx, batch in tqdm(enumerate(loader)):
+            _, extrinsic = batch
+            extrinsic = extrinsic.squeeze()
+
             # set the camera
             renderer.camera = cameras.PerspectiveCamera(
                 {
@@ -130,14 +231,24 @@ def visualize_train_scene(
             )
 
             num_total_pixel = dataset.img_width * dataset.img_height
-            pixel_pred, _ = renderer.render_scene(
-                scene,
-                num_pixels=num_total_pixel,
-                num_samples=cfg.renderer.num_samples,
-                project_to_ndc=cfg.renderer.project_to_ndc,
-                device=torch.cuda.current_device(),
-                num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
-            )
+            if "fine" in scenes.keys():  # visualize "fine" scene
+                pixel_pred, _ = renderer.render_scene(
+                    scenes["fine"],
+                    num_pixels=num_total_pixel,
+                    num_samples=cfg.renderer.num_samples_coarse + cfg.renderer.num_samples_fine,
+                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    device=torch.cuda.current_device(),
+                    num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
+                )
+            else:  # visualize "coarse" scene
+                pixel_pred, _ = renderer.render_scene(
+                    scenes["coarse"],
+                    num_pixels=num_total_pixel,
+                    num_samples=cfg.renderer.num_samples_coarse,
+                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    device=torch.cuda.current_device(),
+                    num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
+                )
 
             # (H * W, C) -> (C, H, W)
             pixel_pred = pixel_pred.reshape(dataset.img_height, dataset.img_width, -1)
@@ -145,7 +256,7 @@ def visualize_train_scene(
 
             tvu.save_image(
                 pixel_pred,
-                os.path.join(save_dir, f"{str(view_idx).zfill(5)}.png"),
+                os.path.join(pred_img_dir, f"{str(view_idx).zfill(5)}.png"),
             )
 
 
@@ -156,37 +267,71 @@ def visualize_train_scene(
 )
 def main(cfg: DictConfig) -> None:
     """The entry point of train."""
+    # identify log directory
+    log_dir = HydraConfig.get().runtime.output_dir
+
     # configure device
     runner_utils.init_cuda(cfg)
 
     # initialize data, renderer, and scene
     dataset, loader = runner_utils.init_dataset_and_loader(cfg)
     renderer = runner_utils.init_renderer(cfg)
-    scene = runner_utils.init_scene_repr(cfg)
-    optimizer, scheduler = runner_utils.init_optimizer_and_scheduler(cfg, scene)
+    scenes = runner_utils.init_scene_repr(cfg)
+    optimizer, scheduler = runner_utils.init_optimizer_and_scheduler(cfg, scenes)
     loss_func = runner_utils.init_objective_func(cfg)
+
+    # load if checkpoint exists
+    load_ckpt(
+        cfg.train_params.ckpt.path,
+        scenes,
+        optimizer,
+        scheduler,
+    )
+
+    # initialize writer
+    tb_log_dir = os.path.join(log_dir, "tensorboard")
+    if not os.path.exists(tb_log_dir):
+        os.mkdir(tb_log_dir)
+    writer = SummaryWriter(log_dir=tb_log_dir)
 
     # train the model
     for epoch in tqdm(range(cfg.train_params.optim.num_iter // len(dataset))):
-        epoch_loss = train_one_epoch(
-            cfg, scene, renderer, dataset, loader, loss_func, optimizer, scheduler
+        # train
+        losses = train_one_epoch(
+            cfg, scenes, renderer, dataset, loader, loss_func, optimizer, scheduler
         )
+        for loss_name, value in losses.items():
+            writer.add_scalar(f"Loss/{loss_name}", value)
 
-        print(f"Loss (Train) at epoch {epoch}: {epoch_loss}")
+        # save checkpoint
+        if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:
+            ckpt_dir = os.path.join(log_dir, "ckpt")
 
-        if (epoch + 1) % cfg.train_params.log.visualize_every == 0.0:
+            save_ckpt(
+                ckpt_dir,
+                epoch,
+                scenes,
+                optimizer,
+                scheduler,
+            )
+
+        # visualize
+        if (epoch + 1) % cfg.train_params.log.epoch_btw_vis == 0:
             save_dir = os.path.join(
-                HydraConfig.get().runtime.output_dir,
+                log_dir,
                 f"vis/epoch_{epoch}",
             )
 
             visualize_train_scene(
                 cfg,
-                scene,
+                scenes,
                 renderer,
                 dataset,
+                loader,
                 save_dir,
             )
+
+    writer.flush()
 
 
 if __name__ == "__main__":

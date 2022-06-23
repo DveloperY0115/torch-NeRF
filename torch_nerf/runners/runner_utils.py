@@ -106,11 +106,13 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
             to setup scene representation.
 
     Returns:
-        scene (QueryStruct): An instance of derived class of QueryStructBase.
-            The scene representation.
+        scenes (Dict): A dictionary containing instances of subclasses of QueryStructBase.
+            It contains two separate scene representations each associated with
+            a key 'coarse' and 'fine', respectively.
     """
     if cfg.query_struct.type == "cube":
-        radiance_field = network.NeRFMLP(
+        # initialize coarse network
+        coarse_network = network.NeRFMLP(
             2 * cfg.signal_encoder.coord_encode_level * cfg.network.pos_dim,
             2 * cfg.signal_encoder.dir_encode_level * cfg.network.view_dir_dim,
         ).to(cfg.cuda.device_id)
@@ -122,37 +124,63 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
             cfg.network.view_dir_dim,
             cfg.signal_encoder.dir_encode_level,
         )
-        scene = qs.QSCube(
-            radiance_field,
+        coarse_scene = qs.QSCube(
+            coarse_network,
             {"coord_enc": coord_enc, "dir_enc": dir_enc},
         )
 
-        return scene
+        # initialize fine network
+        fine_network = network.NeRFMLP(
+            2 * cfg.signal_encoder.coord_encode_level * cfg.network.pos_dim,
+            2 * cfg.signal_encoder.dir_encode_level * cfg.network.view_dir_dim,
+        ).to(cfg.cuda.device_id)
+        fine_scene = qs.QSCube(
+            fine_network,
+            {"coord_enc": coord_enc, "dir_enc": dir_enc},
+        )
+
+        return {"coarse": coarse_scene, "fine": fine_scene}
     else:
         raise ValueError("Unsupported scene representation.")
 
 
-def init_optimizer_and_scheduler(cfg: DictConfig, scene):
+def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
     """
     Initializes the optimizer and learning rate scheduler used for training.
 
     Args:
         cfg (DictConfig): A config object holding parameters required
             to setup optimizer and learning rate scheduler.
-        scene (QueryStruct): A scene representation holding the neural network(s)
-            to be optimized.
+        scenes (Dict): A dictionary containing neural scene representation(s).
 
     Returns:
-
+        optimizer ():
+        scheduler ():
     """
+    if not "coarse" in scenes.keys():
+        raise ValueError(
+            "At least a coarse representation the scene is required for training. "
+            f"Got a dictionary whose keys are {scenes.keys()}."
+        )
+
     optimizer = None
     scheduler = None
 
+    # ==============================================================================
+    # configure optimizer
     if cfg.train_params.optim.optim_type == "adam":
         optimizer = torch.optim.Adam(
-            scene.radiance_field.parameters(),
+            scenes["coarse"].radiance_field.parameters(),
             lr=cfg.train_params.optim.init_lr,
         )  # TODO: A scene may contain two or more networks!
+
+    if "fine" in scenes.keys():
+        optimizer.add_param_group(
+            {
+                "params": scenes["fine"].radiance_field.parameters(),
+            }
+        )
+    # ==============================================================================
 
     if cfg.train_params.optim.scheduler_type == "exp":
         # compute decay rate

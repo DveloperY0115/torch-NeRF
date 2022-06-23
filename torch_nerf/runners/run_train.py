@@ -155,7 +155,7 @@ def train_one_epoch(
             fine_pred, fine_indices, _ = renderer.render_scene(
                 scenes["fine"],
                 num_pixels=cfg.renderer.num_pixels,
-                num_samples=cfg.renderer.num_samples_coarse + cfg.renderer.num_samples_fine,
+                num_samples=(cfg.renderer.num_samples_coarse, cfg.renderer.num_samples_fine),
                 project_to_ndc=cfg.renderer.project_to_ndc,
                 weights=coarse_weights,
                 device=torch.cuda.current_device(),
@@ -191,6 +191,7 @@ def visualize_train_scene(
     dataset,
     loader,
     save_dir: str,
+    num_imgs: int = 1,
 ):
     """
     Visualizes the scene being trained.

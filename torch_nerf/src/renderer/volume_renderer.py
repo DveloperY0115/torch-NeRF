@@ -60,7 +60,7 @@ class VolumeRenderer(object):
         self,
         scene: query_struct.QueryStructBase,
         num_pixels: int,
-        num_samples: int,
+        num_samples: typing.Union[int, typing.Tuple[int, int]],
         project_to_ndc: bool,
         device: int,
         pixel_indices: typing.Optional[torch.Tensor] = None,
@@ -75,7 +75,9 @@ class VolumeRenderer(object):
             num_pixels (int): Number of pixels to render.
                 If smaller than the total number of pixels in the current resolution,
                 sample pixels randomly.
-            num_samples (int): Number of samples drawn along each ray.
+            num_samples (int | Tuple[int, int]): Number of samples drawn along each ray.
+                (1) a single integer: the number of coarse samples.
+                (2) a tuple of integers: the number of coarse and fine samples, respectively.
             project_to_ndc (bool):
             device (int):
             pixel_indices (torch.Tensor):
@@ -92,6 +94,12 @@ class VolumeRenderer(object):
         """
         if not isinstance(num_pixels, int):
             raise ValueError(f"Expected variable of type int. Got {type(num_pixels)}.")
+        if isinstance(num_samples, (tuple, list)):
+            if len(num_samples) != 2:
+                raise ValueError(
+                    "Expected a tuple of length 2 for num_samples of type tuple. "
+                    f"Got a tuple of length {len(num_samples)}."
+                )
 
         # sample pixels to render
         if not pixel_indices is None:

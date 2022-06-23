@@ -2,8 +2,11 @@
 Implementation of Stratified sampler.
 """
 
+import typing
+
 import torch
 from torch_nerf.src.renderer.ray_samplers.sampler_base import *
+from torch_nerf.src.renderer.ray_samplers.utils import sample_pdf
 
 
 class StratifiedSampler(RaySamplerBase):
@@ -14,7 +17,7 @@ class StratifiedSampler(RaySamplerBase):
     def sample_along_rays(
         self,
         ray_bundle: RayBundle,
-        num_sample: int,
+        num_samples: typing.Union[int, typing.Tuple[int, int]],
         weights: torch.Tensor = None,
     ) -> torch.Tensor:
         """
@@ -33,7 +36,9 @@ class StratifiedSampler(RaySamplerBase):
         Args:
             ray_bundle (RayBundle): An instance of RayBundle containing ray origin, ray direction,
                 the nearest/farthest ray distances.
-            num_sample (int): Number of samples sampled along each ray.
+            num_samples (int | Tuple[int, int]): Number of samples drawn along each ray.
+                (1) a single integer: the number of coarse samples.
+                (2) a tuple of integers: the number of coarse and fine samples, respectively.
             weights (torch.Tensor): An instance of torch.Tensor of shape (num_ray, num_sample).
                 If provided, the samples are sampled using the inverse sampling technique
                 from the distribution represented by the CDF derived from it.
@@ -47,25 +52,54 @@ class StratifiedSampler(RaySamplerBase):
             delta (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing the
                 difference between adjacent t's.
         """
-        if not weights is None:
+        if not weights is None:  # hierarchical sampling
             if not isinstance(weights, torch.Tensor):
                 raise ValueError(f"Expected an instance of torch.Tensor. Got {type(weights)}.")
+            if not isinstance(num_samples, (tuple, list)):
+                raise ValueError(
+                    "Expected a tuple for parameter 'num_samples' when hierarchical sampling is used. "
+                    f"Got a parameter of type {type(num_samples)}."
+                )
 
-        # equally partition the interval [t_near, t_far]
-        t_bins = (
-            torch.linspace(
+            num_sample_coarse, num_sample_fine = num_samples
+
+            # draw coarse samples
+            t_bins, partition_size = self._create_t_bins(
                 ray_bundle.t_near,
                 ray_bundle.t_far,
-                num_sample + 1,
-            )[:-1]
-            .unsqueeze(0)
-            .expand(ray_bundle.ray_origin.shape[0], -1)
-        )
-        partition_size = (ray_bundle.t_far - ray_bundle.t_near) / num_sample
+                num_sample_coarse,
+                ray_bundle.ray_origin.shape[0],
+            )
+            t_samples_coarse = t_bins + partition_size * torch.rand_like(t_bins)
 
-        if not weights is None:  # sample from the given distribution
-            raise NotImplementedError("TODO: Necessary for implementing hierarchical sampling!")
-        else:  # sample from the uniform distribution within each interval
+            # draw fine samples
+            weights = weights.cpu()  # sampling is done on CPU
+            t_samples_fine = sample_pdf(
+                t_bins,
+                partition_size,
+                weights,
+                num_sample_fine,
+            )
+            t_samples, _ = torch.sort(
+                torch.cat([t_samples_coarse, t_samples_fine], dim=-1),
+                dim=-1,
+            )
+        else:
+            if not isinstance(num_samples, int):
+                raise ValueError(
+                    "Expected an integer for parameter 'num_samples' when hierarchical sampling is unused. "
+                    f"Got a parameter of type {type(num_samples)}."
+                )
+
+            # equally partition the interval [t_near, t_far]
+            t_bins, partition_size = self._create_t_bins(
+                ray_bundle.t_near,
+                ray_bundle.t_far,
+                num_samples,
+                ray_bundle.ray_origin.shape[0],
+            )
+
+            # sample from the uniform distribution within each interval
             t_samples = t_bins + partition_size * torch.rand_like(t_bins)
 
         # compute delta: t_{i+1} - t_{i}
@@ -77,9 +111,9 @@ class StratifiedSampler(RaySamplerBase):
 
         # derive coordinates of sample points
         ray_origin = ray_bundle.ray_origin
-        ray_origin = ray_origin.unsqueeze(1).repeat((1, num_sample, 1))
+        ray_origin = ray_origin.unsqueeze(1).repeat((1, t_samples.shape[1], 1))
         ray_dir = ray_bundle.ray_dir
-        ray_dir = ray_dir.unsqueeze(1).repeat((1, num_sample, 1))
+        ray_dir = ray_dir.unsqueeze(1).repeat((1, t_samples.shape[1], 1))
         sample_pts = ray_origin + t_samples.unsqueeze(-1) * ray_dir
 
         return sample_pts, ray_dir, delta

@@ -63,6 +63,8 @@ class VolumeRenderer(object):
         num_samples: int,
         project_to_ndc: bool,
         device: int,
+        pixel_indices: typing.Optional[torch.Tensor] = None,
+        cdf: typing.Optional[torch.Tensor] = None,
         num_ray_batch: int = None,
     ):
         """
@@ -70,12 +72,14 @@ class VolumeRenderer(object):
 
         Args:
             scene (QueryStruct): An instance of class derived from 'QueryStructBase'.
-            num_samples (int): Number of samples drawn along each ray.
             num_pixels (int): Number of pixels to render.
                 If smaller than the total number of pixels in the current resolution,
                 sample pixels randomly.
+            num_samples (int): Number of samples drawn along each ray.
             project_to_ndc (bool):
             device (int):
+            pixel_indices (torch.Tensor):
+            cdf (torch.Tensor):
             num_ray_batch (int): The number of ray batches.
 
         Returns:
@@ -88,17 +92,20 @@ class VolumeRenderer(object):
             raise ValueError(f"Expected variable of type int. Got {type(num_pixels)}.")
 
         # sample pixels to render
-        if num_pixels < self.camera.img_height * self.camera.img_width:
-            pixel_to_render = torch.tensor(
-                random.sample(
-                    list(range(self.camera.img_height * self.camera.img_width)),
-                    num_pixels,
-                )
-            )
+        if not pixel_indices is None:
+            pixel_to_render = pixel_indices
         else:
-            pixel_to_render = torch.arange(
-                0, self.camera.img_height * self.camera.img_width
-            )  # render the entire image
+            if num_pixels < self.camera.img_height * self.camera.img_width:
+                pixel_to_render = torch.tensor(
+                    random.sample(
+                        list(range(self.camera.img_height * self.camera.img_width)),
+                        num_pixels,
+                    )
+                )
+            else:
+                pixel_to_render = torch.arange(
+                    0, self.camera.img_height * self.camera.img_width
+                )  # render the entire image
 
         # generate sample points along rays
         coords = self.screen_coords.clone()
@@ -113,6 +120,7 @@ class VolumeRenderer(object):
         sample_pts, ray_dir, delta = self.sampler.sample_along_rays(
             ray_bundle,
             num_samples,
+            cdf=cdf,
         )
 
         # render rays

@@ -18,6 +18,36 @@ import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.runners.runner_utils as runner_utils
 
 
+def save_ckpt(
+    ckpt_dir: str,
+    epoch: int,
+    scene,
+    optimizer,
+    scheduler,
+) -> None:
+    """
+    Saves the checkpoint.
+
+    Args:
+        epoch (int):
+        scene ():
+        optimizer ():
+        scheduler ():
+    """
+    if not os.path.exists(ckpt_dir):
+        os.makedirs(ckpt_dir)
+    ckpt_file = os.path.join(ckpt_dir, f"ckpt_{str(epoch).zfill(6)}.pth")
+
+    torch.save(
+        {
+            "epoch": epoch,
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict(),
+        },
+        ckpt_file,
+    )
+
+
 def load_ckpt(
     ckpt_file,
     scene,
@@ -229,8 +259,20 @@ def main(cfg: DictConfig) -> None:
         )
         writer.add_scalar("Loss/Train", epoch_loss)
 
-        # log
-        if (epoch + 1) % cfg.train_params.log.visualize_every == 0.0:
+        # save checkpoint
+        if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:
+            ckpt_dir = os.path.join(log_dir, "ckpt")
+
+            save_ckpt(
+                ckpt_dir,
+                epoch,
+                scenes,
+                optimizer,
+                scheduler,
+            )
+
+        # visualize
+        if (epoch + 1) % cfg.train_params.log.epoch_btw_vis == 0:
             save_dir = os.path.join(
                 log_dir,
                 f"vis/epoch_{epoch}",

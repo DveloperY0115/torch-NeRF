@@ -115,7 +115,7 @@ class VolumeRenderer(object):
                 pixel_to_render = torch.tensor(
                     np.random.choice(
                         self.camera.img_height * self.camera.img_width,
-                        size=[num_samples],
+                        size=[num_pixels],
                         replace=False,
                     )
                 )

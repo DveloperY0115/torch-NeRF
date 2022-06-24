@@ -22,6 +22,7 @@ class NeRFBlenderDataset(data.Dataset):
         self,
         root_dir: str,
         data_type: str,
+        half_res: bool,
         white_bg: bool = True,
     ):
         """
@@ -30,6 +31,7 @@ class NeRFBlenderDataset(data.Dataset):
         Args:
             root_dir (str): A string indicating the root directory of the dataset.
             data_type (str): A string indicating the type of the dataset.
+            half_res (bool): A flag that determines whether to half the image resolution.
             white_bg (bool): A flag that determines whether to make background of images white.
         """
         # check arguments
@@ -50,7 +52,7 @@ class NeRFBlenderDataset(data.Dataset):
             self._poses,
             self._camera_params,
             self._render_poses,
-        ) = load_blender_data(root_dir, data_type)
+        ) = load_blender_data(root_dir, data_type, half_res=half_res)
 
         self._img_height = self._camera_params[0]
         self._img_width = self._camera_params[1]

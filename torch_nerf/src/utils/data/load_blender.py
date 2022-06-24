@@ -172,8 +172,7 @@ def load_blender_data(
     # camera intrinsics
     img_height, img_width = imgs[0].shape[:2]
     camera_angle_x = float(meta["camera_angle_x"])  # horizontal field of view (FOV)
-    focal = 0.5 * img_width / np.tan(0.5 * camera_angle_x)
-    intrinsic_params = [img_height, img_width, focal]
+    focal = float(0.5 * img_width / np.tan(0.5 * camera_angle_x))
 
     # camera extrinsics for image rendering
     render_poses = torch.stack(
@@ -185,11 +184,11 @@ def load_blender_data(
         img_width = img_width // 2
         focal = focal / 2.0
 
-        imgs_half_res = np.zeros((imgs.shape[0], img_height, img_width, 4))
+        imgs_half_res = np.zeros((imgs.shape[0], img_height, img_width, 4), dtype=np.float32)
         for i, img in enumerate(imgs):
             imgs_half_res[i] = cv2.resize(
                 img, (img_width, img_height), interpolation=cv2.INTER_AREA
             )
         imgs = imgs_half_res
 
-    return imgs, poses, intrinsic_params, render_poses
+    return imgs, poses, [img_height, img_width, focal], render_poses

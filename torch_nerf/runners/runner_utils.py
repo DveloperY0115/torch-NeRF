@@ -53,8 +53,9 @@ def init_dataset_and_loader(
     if cfg.data.dataset_type == "nerf_synthetic":
         dataset = NeRFBlenderDataset(
             cfg.data.data_root,
-            cfg.data.data_type,
-            cfg.data.white_bg,
+            data_type=cfg.data.data_type,
+            half_res=cfg.data.half_res,
+            white_bg=cfg.data.white_bg,
         )
     else:
         raise ValueError("Unsupported dataset.")

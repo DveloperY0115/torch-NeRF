@@ -161,6 +161,7 @@ def train_one_epoch(
                 num_pixels=cfg.renderer.num_pixels,
                 num_samples=(cfg.renderer.num_samples_coarse, cfg.renderer.num_samples_fine),
                 project_to_ndc=cfg.renderer.project_to_ndc,
+                pixel_indices=coarse_indices,  # sample the ray from the same pixels
                 weights=coarse_weights,
                 device=torch.cuda.current_device(),
             )

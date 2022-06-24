@@ -67,7 +67,7 @@ class VolumeRenderer(object):
         pixel_indices: typing.Optional[torch.Tensor] = None,
         weights: typing.Optional[torch.Tensor] = None,
         num_ray_batch: int = None,
-    ):
+    ) -> typing.Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Renders the scene by querying underlying 3D inductive bias.
 

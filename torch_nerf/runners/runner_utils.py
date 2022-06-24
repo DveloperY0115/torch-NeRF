@@ -167,20 +167,21 @@ def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
     optimizer = None
     scheduler = None
 
+    # identify parameters to be optimized
+    params = list(scenes["coarse"].radiance_field.parameters())
+    if "fine" in scenes.keys():
+        params += list(scenes["fine"].radiance_field.parameters())
+
     # ==============================================================================
     # configure optimizer
     if cfg.train_params.optim.optim_type == "adam":
         optimizer = torch.optim.Adam(
-            scenes["coarse"].radiance_field.parameters(),
+            params,
             lr=cfg.train_params.optim.init_lr,
         )  # TODO: A scene may contain two or more networks!
+    else:
+        raise NotImplementedError()
 
-    if "fine" in scenes.keys():
-        optimizer.add_param_group(
-            {
-                "params": scenes["fine"].radiance_field.parameters(),
-            }
-        )
     # ==============================================================================
 
     if cfg.train_params.optim.scheduler_type == "exp":
@@ -194,6 +195,8 @@ def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
             optimizer,
             gamma,
         )
+    else:
+        raise NotImplementedError()
 
     return optimizer, scheduler
 

@@ -1,5 +1,5 @@
 """
-Ray samplers for sampling rays used for volume rendering.
+Base class for ray samplers.
 """
 
 import typing

@@ -79,11 +79,19 @@ class VolumeRenderer(object):
             num_samples (int | Tuple[int, int]): Number of samples drawn along each ray.
                 (1) a single integer: the number of coarse samples.
                 (2) a tuple of integers: the number of coarse and fine samples, respectively.
-            project_to_ndc (bool):
-            device (int):
-            pixel_indices (torch.Tensor):
-            weights (torch.Tensor):
+            project_to_ndc (bool): A flag to toggle NDC projection.
+            device (int): The index to the CUDA device.
+            pixel_indices (torch.Tensor): An instance of torch.Tensor of shape (num_pixels,).
+                The indices of pixels from where rays will be casted.
+            weights (torch.Tensor): An instance of torch.Tensor of shape (num_pixels, num_samples[0]).
+                The weights obtained by evaluating 'coarse' network representing a scene. This
+                weight is normalized and used during inverse-CDF sampling. Please refer to
+                Section 5.2 - Hierarchical sampling of 'NeRF: Representing Scenes as Neural
+                Radiance Fields for View Synthesis (ECCV 2020, Best paper honorable mention)'
+                for details.
             num_ray_batch (int): The number of ray batches.
+                The entire set of rays are divided into 'num_ray_batch'-batches and processed
+                individually. Ray batching is necessary to avoid out-of-memory.
 
         Returns:
             pixel_rgb (torch.Tensor): An instance of torch.Tensor of shape (num_pixels, 3).

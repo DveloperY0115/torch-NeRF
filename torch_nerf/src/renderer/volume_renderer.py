@@ -107,15 +107,14 @@ class VolumeRenderer(object):
         else:
             if num_pixels < self.camera.img_height * self.camera.img_width:
                 pixel_to_render = torch.tensor(
-                    random.sample(
-                        list(range(self.camera.img_height * self.camera.img_width)),
-                        num_pixels,
+                    np.random.choice(
+                        self.camera.img_height * self.camera.img_width,
+                        size=[num_samples],
+                        replace=False,
                     )
                 )
-            else:
-                pixel_to_render = torch.arange(
-                    0, self.camera.img_height * self.camera.img_width
-                )  # render the entire image
+            else:  # render the entire image
+                pixel_to_render = torch.arange(0, self.camera.img_height * self.camera.img_width)
 
         # generate sample points along rays
         coords = self.screen_coords.clone()

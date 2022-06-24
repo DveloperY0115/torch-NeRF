@@ -5,6 +5,7 @@ Volume renderer implemented using Pytorch.
 import random
 import typing
 
+import numpy as np
 import torch
 import torch_nerf.src.query_struct as query_struct
 import torch_nerf.src.renderer.cameras as cameras
@@ -99,6 +100,11 @@ class VolumeRenderer(object):
                 raise ValueError(
                     "Expected a tuple of length 2 for num_samples of type tuple. "
                     f"Got a tuple of length {len(num_samples)}."
+                )
+            if pixel_indices is None:
+                raise ValueError(
+                    "Expected a predefined set of pixels to render in hierarchical sampling. "
+                    "Pixel indices are not provided."
                 )
 
         # sample pixels to render

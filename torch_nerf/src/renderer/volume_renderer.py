@@ -197,7 +197,13 @@ class VolumeRenderer(object):
         rgb = []
         weights = []
 
-        partitions = torch.linspace(0, sample_pts.shape[0], num_batch + 1, dtype=torch.long)
+        partitions = torch.linspace(
+            0,
+            sample_pts.shape[0],
+            num_batch + 1,
+            dtype=torch.long,
+        )
+        partitions[-1] = sample_pts.shape[0]  # numerical issue
 
         for start, end in zip(partitions[0::1], partitions[1::1]):
             pts_batch = sample_pts[start:end, ...].to(device)

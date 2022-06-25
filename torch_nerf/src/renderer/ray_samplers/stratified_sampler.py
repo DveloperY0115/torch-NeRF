@@ -122,8 +122,8 @@ class StratifiedSampler(RaySamplerBase):
 
     def _create_t_bins(
         self,
-        t_near: float,
-        t_far: float,
+        t_start: float,
+        t_end: float,
         num_partitions: int,
     ) -> Tuple[torch.Tensor, float]:
         """
@@ -145,10 +145,10 @@ class StratifiedSampler(RaySamplerBase):
             partition_size (float): The length of each interval.
         """
         t_bins = torch.linspace(
-            t_near,
-            t_far,
+            t_start,
+            t_end,
             num_partitions + 1,
         )[:-1]
-        partition_size = (t_far - t_near) / num_partitions
+        partition_size = (t_end - t_start) / num_partitions
 
         return t_bins, partition_size

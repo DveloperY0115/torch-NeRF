@@ -64,6 +64,7 @@ def init_dataset_and_loader(
         dataset,
         batch_size=cfg.data.batch_size,
         shuffle=cfg.data.shuffle,
+        num_workers=4,  # TODO: Adjust dynamically according to cfg.cuda.device_id
     )
 
     return dataset, loader

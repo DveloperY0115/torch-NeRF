@@ -18,6 +18,7 @@ class StratifiedSampler(RaySamplerBase):
         self,
         ray_bundle: RayBundle,
         num_samples: Union[int, Tuple[int, int]],
+        device: int,
         weights: torch.Tensor = None,
     ) -> torch.Tensor:
         """
@@ -39,6 +40,7 @@ class StratifiedSampler(RaySamplerBase):
             num_samples (int | Tuple[int, int]): Number of samples drawn along each ray.
                 (1) a single integer: the number of coarse samples.
                 (2) a tuple of integers: the number of coarse and fine samples, respectively.
+            device (int): The index of CUDA device where results of ray sampling will be located.
             weights (torch.Tensor): An instance of torch.Tensor of shape (num_ray, num_sample).
                 If provided, the samples are sampled using the inverse sampling technique
                 from the distribution represented by the CDF derived from it.
@@ -68,13 +70,14 @@ class StratifiedSampler(RaySamplerBase):
                 ray_bundle.t_near,
                 ray_bundle.t_far,
                 num_sample_coarse,
+                device,
             )
             t_bins = t_bins.unsqueeze(0)
             t_bins = t_bins.repeat((ray_bundle.ray_origin.shape[0], 1))
             t_samples_coarse = t_bins + partition_size * torch.rand_like(t_bins)
 
             # draw fine samples
-            weights = weights.cpu()  # sampling is done on CPU
+            weights = weights.to(t_bins.device)
             t_samples_fine = sample_pdf(
                 t_bins,
                 partition_size,
@@ -97,6 +100,7 @@ class StratifiedSampler(RaySamplerBase):
                 ray_bundle.t_near,
                 ray_bundle.t_far,
                 num_samples,
+                device,
             )
             t_bins = t_bins.unsqueeze(0)
             t_bins = t_bins.repeat((ray_bundle.ray_origin.shape[0], 1))
@@ -106,15 +110,18 @@ class StratifiedSampler(RaySamplerBase):
 
         # compute delta: t_{i+1} - t_{i}
         delta = torch.diff(
-            torch.cat([t_samples, 1e8 * torch.ones((t_samples.shape[0], 1))], dim=-1),
+            torch.cat(
+                [t_samples, 1e8 * torch.ones((t_samples.shape[0], 1), device=t_samples.device)],
+                dim=-1,
+            ),
             n=1,
             dim=-1,
         )
 
         # derive coordinates of sample points
-        ray_origin = ray_bundle.ray_origin
+        ray_origin = ray_bundle.ray_origin.to(t_samples.device)
         ray_origin = ray_origin.unsqueeze(1).repeat((1, t_samples.shape[1], 1))
-        ray_dir = ray_bundle.ray_dir
+        ray_dir = ray_bundle.ray_dir.to(t_samples.device)
         ray_dir = ray_dir.unsqueeze(1).repeat((1, t_samples.shape[1], 1))
         sample_pts = ray_origin + t_samples.unsqueeze(-1) * ray_dir
 
@@ -125,6 +132,7 @@ class StratifiedSampler(RaySamplerBase):
         t_start: float,
         t_end: float,
         num_partitions: int,
+        device: int,
     ) -> Tuple[torch.Tensor, float]:
         """
         Generates a partition of t's by subdividing the interval [t_near, t_far].
@@ -138,6 +146,7 @@ class StratifiedSampler(RaySamplerBase):
             t_end (float): The right endpoint of the interval.
             num_partitions (int): The number of partitions of equal size
                 dividing the given interval.
+            device (int): The index of CUDA device where esults of ray sampling will be located.
 
         Returns:
             t_bins (torch.Tensor): An instance of torch.Tensor of shape (num_samples, ).
@@ -148,6 +157,7 @@ class StratifiedSampler(RaySamplerBase):
             t_start,
             t_end,
             num_partitions + 1,
+            device=device,
         )[:-1]
         partition_size = (t_end - t_start) / num_partitions
 

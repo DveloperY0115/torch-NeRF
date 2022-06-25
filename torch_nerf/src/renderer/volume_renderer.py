@@ -125,10 +125,13 @@ class VolumeRenderer(object):
                         self.camera.img_height * self.camera.img_width,
                         size=[num_pixels],
                         replace=False,
-                    )
+                    ),
                 )
             else:  # render the entire image
-                pixel_to_render = torch.arange(0, self.camera.img_height * self.camera.img_width)
+                pixel_to_render = torch.arange(
+                    0,
+                    self.camera.img_height * self.camera.img_width,
+                )
 
         # generate sample points along rays
         coords = self.screen_coords.clone()
@@ -140,9 +143,11 @@ class VolumeRenderer(object):
         )
 
         # sample points along rays
+        # return values are located in GPU memory
         sample_pts, ray_dir, delta = self.sampler.sample_along_rays(
             ray_bundle,
             num_samples,
+            device=device,
             weights=weights,
         )
 
@@ -153,7 +158,6 @@ class VolumeRenderer(object):
             ray_dir,
             delta,
             num_batch=1 if num_ray_batch is None else num_ray_batch,
-            device=device,
         )
 
         return pixel_rgb, pixel_to_render, weights
@@ -186,7 +190,6 @@ class VolumeRenderer(object):
         ray_dir: torch.Tensor,
         delta: torch.Tensor,
         num_batch: int,
-        device: int,
     ) -> torch.Tensor:
         """
         Renders an image by dividing its pixels into small batches.
@@ -197,7 +200,6 @@ class VolumeRenderer(object):
             ray_dir (torch.Tensor):
             delta (torch.Tensor):
             num_batch (int):
-            device (int)
 
         Returns:
             pixel_rgb (torch.Tensor):
@@ -214,9 +216,9 @@ class VolumeRenderer(object):
         partitions[-1] = sample_pts.shape[0]  # numerical issue
 
         for start, end in zip(partitions[0::1], partitions[1::1]):
-            pts_batch = sample_pts[start:end, ...].to(device)
-            dir_batch = ray_dir[start:end, ...].to(device)
-            delta_batch = delta[start:end, ...].to(device)
+            pts_batch = sample_pts[start:end, ...]
+            dir_batch = ray_dir[start:end, ...]
+            delta_batch = delta[start:end, ...]
 
             # query the scene to get density and radiance
             sigma_batch, radiance_batch = scene.query_points(pts_batch, dir_batch)

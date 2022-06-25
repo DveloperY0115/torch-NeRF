@@ -35,12 +35,12 @@ def sample_pdf(
     # compute CDFs
     cdf = torch.cumsum(pdf, dim=-1)
     cdf = torch.cat(
-        [torch.zeros((cdf.shape[0], 1)), cdf[..., :-1]],
+        [torch.zeros((cdf.shape[0], 1), device=cdf.device), cdf[..., :-1]],
         dim=-1,
     )
 
     # sample from the uniform distribution: U[0, 1)
-    cdf_ys = torch.rand((cdf.shape[0], num_sample))
+    cdf_ys = torch.rand((cdf.shape[0], num_sample), device=cdf.device)
 
     # heuristically sample from the distribution
     cdf_ys = cdf_ys.contiguous()

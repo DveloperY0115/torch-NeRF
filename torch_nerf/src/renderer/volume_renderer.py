@@ -7,7 +7,7 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import torch
-import torch_nerf.src.query_struct as query_struct
+import torch_nerf.src.scene as query_struct
 import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.src.renderer.integrators as integrators
 import torch_nerf.src.renderer.ray_samplers as ray_samplers
@@ -59,7 +59,7 @@ class VolumeRenderer(object):
 
     def render_scene(
         self,
-        scene: query_struct.QueryStructBase,
+        scene: scene.QueryStructBase,
         num_pixels: int,
         num_samples: Union[int, Tuple[int, int]],
         project_to_ndc: bool,

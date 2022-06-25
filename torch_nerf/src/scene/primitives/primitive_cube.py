@@ -5,11 +5,11 @@ A simple cubic query structure suitable for bounded scenes.
 from typing import Dict, Optional, Tuple
 
 import torch
-from torch_nerf.src.query_struct.query_struct_base import QueryStructBase
+from torch_nerf.src.scene.primitives.primitive_base import QueryStructBase
 from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
 
 
-class QSCube(QueryStructBase):
+class PrimitiveCube(QueryStructBase):
     """
     A simple cubic query structure.
 

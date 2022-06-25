@@ -142,8 +142,11 @@ class VolumeRenderer(object):
             project_to_ndc=project_to_ndc,
         )
 
+        # =====================================================================
+        # Memory-bandwidth intensive operations (must be done directly on GPUs)
+        # =====================================================================
+
         # sample points along rays
-        # return values are located in GPU memory
         sample_pts, ray_dir, delta = self.sampler.sample_along_rays(
             ray_bundle,
             num_samples,
@@ -159,6 +162,10 @@ class VolumeRenderer(object):
             delta,
             num_batch=1 if num_ray_batch is None else num_ray_batch,
         )
+
+        # =====================================================================
+        # Memory-bandwidth intensive operations (must be done directly on GPUs)
+        # =====================================================================
 
         return pixel_rgb, pixel_to_render, weights
 

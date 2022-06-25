@@ -194,7 +194,6 @@ def visualize_train_scene(
     scenes,
     renderer,
     dataset,
-    loader,
     save_dir: str,
     num_imgs: int = 1,
 ):
@@ -216,10 +215,8 @@ def visualize_train_scene(
     if not os.path.exists(pred_img_dir):
         os.mkdir(pred_img_dir)
 
-    render_poses = dataset.render_poses
-
+    loader = torch.utils.data.DataLoader(dataset, shuffle=True)
     with torch.no_grad():
-        # for view_idx, extrinsic in tqdm(enumerate(render_poses)):
         for view_idx, batch in tqdm(enumerate(loader)):
             if view_idx >= num_imgs:
                 break
@@ -337,7 +334,6 @@ def main(cfg: DictConfig) -> None:
                 scenes,
                 renderer,
                 dataset,
-                loader,
                 save_dir,
             )
 

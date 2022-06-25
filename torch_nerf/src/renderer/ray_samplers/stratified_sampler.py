@@ -68,8 +68,9 @@ class StratifiedSampler(RaySamplerBase):
                 ray_bundle.t_near,
                 ray_bundle.t_far,
                 num_sample_coarse,
-                ray_bundle.ray_origin.shape[0],
             )
+            t_bins = t_bins.unsqueeze(0)
+            t_bins = t_bins.repeat((ray_bundle.ray_origin.shape[0], 1))
             t_samples_coarse = t_bins + partition_size * torch.rand_like(t_bins)
 
             # draw fine samples
@@ -96,8 +97,9 @@ class StratifiedSampler(RaySamplerBase):
                 ray_bundle.t_near,
                 ray_bundle.t_far,
                 num_samples,
-                ray_bundle.ray_origin.shape[0],
             )
+            t_bins = t_bins.unsqueeze(0)
+            t_bins = t_bins.repeat((ray_bundle.ray_origin.shape[0], 1))
 
             # sample from the uniform distribution within each interval
             t_samples = t_bins + partition_size * torch.rand_like(t_bins)
@@ -122,32 +124,31 @@ class StratifiedSampler(RaySamplerBase):
         self,
         t_near: float,
         t_far: float,
-        num_samples: int,
-        num_rays: int,
+        num_partitions: int,
     ) -> Tuple[torch.Tensor, float]:
         """
-        Generates a partition of t's.
+        Generates a partition of t's by subdividing the interval [t_near, t_far].
+
+        This method returns a 1D tensor whose elements are:
+        [t_near, t_near + a, t_near + 2 * a, ..., t_near + (num_partitions - 1) * a]
+        where num_partitions = (t_far - t_near) / num_partitions.
 
         Args:
-            t_start (float):
-            t_end (float):
-            num_samples (int):
-            num_rays (int):
+            t_start (float): The left endpoint of the interval.
+            t_end (float): The right endpoint of the interval.
+            num_partitions (int): The number of partitions of equal size
+                dividing the given interval.
 
         Returns:
-            t_bins (torch.Tensor): An instance of torch.Tensor of shape (num_rays, num_samples).
+            t_bins (torch.Tensor): An instance of torch.Tensor of shape (num_samples, ).
                 The equally subdivided intervals of t's.
             partition_size (float): The length of each interval.
         """
-        t_bins = (
-            torch.linspace(
-                t_near,
-                t_far,
-                num_samples + 1,
-            )[:-1]
-            .unsqueeze(0)
-            .expand(num_rays, -1)
-        )
-        partition_size = (t_far - t_near) / num_samples
+        t_bins = torch.linspace(
+            t_near,
+            t_far,
+            num_partitions + 1,
+        )[:-1]
+        partition_size = (t_far - t_near) / num_partitions
 
         return t_bins, partition_size

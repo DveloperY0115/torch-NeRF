@@ -111,20 +111,26 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
             It contains two separate scene representations each associated with
             a key 'coarse' and 'fine', respectively.
     """
-    if cfg.query_struct.type == "cube":
-        # initialize coarse network
-        coarse_network = network.NeRFMLP(
-            2 * cfg.signal_encoder.coord_encode_level * cfg.network.pos_dim,
-            2 * cfg.signal_encoder.dir_encode_level * cfg.network.view_dir_dim,
-        ).to(cfg.cuda.device_id)
+    if cfg.scene.type == "cube":
+        # initialize signal encoders
         coord_enc = pe.PositionalEncoder(
             cfg.network.pos_dim,
             cfg.signal_encoder.coord_encode_level,
+            cfg.signal_encoder.include_input,
         )
         dir_enc = pe.PositionalEncoder(
             cfg.network.view_dir_dim,
             cfg.signal_encoder.dir_encode_level,
+            cfg.signal_encoder.include_input,
         )
+
+        # initialize network
+        coarse_network = network.NeRFMLP(
+            coord_enc.out_dim,
+            dir_enc.out_dim,
+        ).to(cfg.cuda.device_id)
+
+        # initialize scene
         coarse_scene = scene.PrimitiveCube(
             coarse_network,
             {"coord_enc": coord_enc, "dir_enc": dir_enc},
@@ -132,8 +138,8 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
 
         # initialize fine network
         fine_network = network.NeRFMLP(
-            2 * cfg.signal_encoder.coord_encode_level * cfg.network.pos_dim,
-            2 * cfg.signal_encoder.dir_encode_level * cfg.network.view_dir_dim,
+            coord_enc.out_dim,
+            dir_enc.out_dim,
         ).to(cfg.cuda.device_id)
         fine_scene = scene.PrimitiveCube(
             fine_network,

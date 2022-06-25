@@ -23,6 +23,7 @@ class PositionalEncoder(object):
         self,
         in_dim: int,
         embed_level: int,
+        include_input: bool,
     ):
         """
         Constructor for PositionalEncoder.
@@ -30,12 +31,17 @@ class PositionalEncoder(object):
         Args:
             in_dim (int): Dimensionality of the data.
             embed_level (int): Level of positional encoding.
+            include_input (bool): A flat that determines whether to include
+                raw input in the encoding.
         """
         super().__init__()
 
         self._embed_level = embed_level
+        self._include_input = include_input
         self._in_dim = in_dim
         self._out_dim = 2 * self._embed_level * self._in_dim
+        if self._include_input:
+            self._out_dim += self._in_dim
 
         # creating embedding function
         self._embed_fns = self._create_embedding_fn()
@@ -74,7 +80,9 @@ class PositionalEncoder(object):
 
         freq_bands = 2 ** torch.arange(0.0, max_freq_level, dtype=torch.float32)
 
-        embed_fns.append(lambda x: x)
+        if self._include_input:
+            embed_fns.append(lambda x: x)
+
         for freq in freq_bands:
             embed_fns.append(lambda x, freq=freq: torch.sin(freq * x))
             embed_fns.append(lambda x, freq=freq: torch.cos(freq * x))
@@ -94,3 +102,13 @@ class PositionalEncoder(object):
                 The positional encoding of the input signal.
         """
         return torch.cat([fn(in_signal) for fn in self._embed_fns], -1)
+
+    @property
+    def in_dim(self) -> int:
+        """Returns the dimensionality of the input vector that the encoder takes."""
+        return self._in_dim
+
+    @property
+    def out_dim(self) -> int:
+        """Returns the dimensionality of the output vector after encoding."""
+        return self._out_dim

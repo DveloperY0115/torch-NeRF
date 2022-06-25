@@ -2,7 +2,7 @@
 blender_dataset.py - Abstraction on Pytorch dataset.
 """
 
-import typing
+from typing import Tuple
 
 import torch
 import torch.utils.data as data
@@ -77,7 +77,7 @@ class NeRFBlenderDataset(data.Dataset):
         """Returns the total number of data in the dataset."""
         return self._imgs.shape[0]
 
-    def __getitem__(self, index: int) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Returns the data corresponding to the given index.
 

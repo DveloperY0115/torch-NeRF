@@ -3,7 +3,7 @@ Volume renderer implemented using Pytorch.
 """
 
 import random
-import typing
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -30,7 +30,7 @@ class VolumeRenderer(object):
         self,
         integrator: integrators.IntegratorBase,
         sampler: ray_samplers.RaySamplerBase,
-        camera: typing.Optional[cameras.PerspectiveCamera] = None,
+        camera: Optional[cameras.PerspectiveCamera] = None,
     ):
         """
         Constructor of class 'VolumeRenderer'.
@@ -61,13 +61,13 @@ class VolumeRenderer(object):
         self,
         scene: query_struct.QueryStructBase,
         num_pixels: int,
-        num_samples: typing.Union[int, typing.Tuple[int, int]],
+        num_samples: Union[int, Tuple[int, int]],
         project_to_ndc: bool,
         device: int,
-        pixel_indices: typing.Optional[torch.Tensor] = None,
-        weights: typing.Optional[torch.Tensor] = None,
+        pixel_indices: Optional[torch.Tensor] = None,
+        weights: Optional[torch.Tensor] = None,
         num_ray_batch: int = None,
-    ) -> typing.Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Renders the scene by querying underlying 3D inductive bias.
 

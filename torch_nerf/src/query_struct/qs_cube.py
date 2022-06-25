@@ -2,7 +2,7 @@
 A simple cubic query structure suitable for bounded scenes.
 """
 
-import typing
+from typing import Dict, Optional, Tuple
 
 import torch
 from torch_nerf.src.query_struct.query_struct_base import QueryStructBase
@@ -20,7 +20,7 @@ class QSCube(QueryStructBase):
     def __init__(
         self,
         radiance_field: torch.nn.Module,
-        encoders: typing.Optional[typing.Dict[str, SignalEncoderBase]] = None,
+        encoders: Optional[Dict[str, SignalEncoderBase]] = None,
     ):
         """
         Constructor for QSCube.
@@ -40,7 +40,7 @@ class QSCube(QueryStructBase):
         self,
         pos: torch.Tensor,
         view_dir: torch.Tensor,
-    ) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Query 3D scene to retrieve radiance and density values.
 

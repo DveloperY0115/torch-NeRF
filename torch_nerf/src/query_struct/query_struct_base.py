@@ -2,7 +2,7 @@
 Base class for query structures.
 """
 
-import typing
+from typing import Dict, Optional, Tuple
 
 import torch
 from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
@@ -15,7 +15,7 @@ class QueryStructBase(object):
 
     def __init__(
         self,
-        encoders: typing.Optional[typing.Dict[str, SignalEncoderBase]] = None,
+        encoders: Optional[Dict[str, SignalEncoderBase]] = None,
     ):
         if not isinstance(encoders, dict):
             raise ValueError(f"Expected a parameter of type Dict. Got {type(encoders)}")
@@ -29,7 +29,7 @@ class QueryStructBase(object):
         self,
         pos: torch.Tensor,
         view_dir: torch.Tensor,
-    ) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Query 3D scene to retrieve radiance and density values.
 
@@ -46,7 +46,7 @@ class QueryStructBase(object):
         raise NotImplementedError()
 
     @property
-    def encoders(self) -> typing.Optional[typing.Dict[str, SignalEncoderBase]]:
+    def encoders(self) -> Optional[Dict[str, SignalEncoderBase]]:
         """
         Returns the signal encoders that process signals before
         querying the neural radiance field(s).

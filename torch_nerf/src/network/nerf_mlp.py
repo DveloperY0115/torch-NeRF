@@ -2,7 +2,7 @@
 Pytorch implementation of MLP used in NeRF (ECCV 2020).
 """
 
-import typing
+from typing import Dict
 
 import torch
 import torch.nn as nn
@@ -66,7 +66,7 @@ class NeRFMLP(nn.Module):
         self,
         pos: torch.Tensor,
         view_dir: torch.Tensor,
-    ) -> typing.Dict[torch.Tensor, torch.Tensor]:
+    ) -> Dict[torch.Tensor, torch.Tensor]:
         """
         Predicts color and density.
 

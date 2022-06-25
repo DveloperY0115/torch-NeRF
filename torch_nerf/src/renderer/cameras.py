@@ -2,7 +2,7 @@
 Camera classes used inside renderer(s).
 """
 
-import typing
+from typing import Dict, Tuple, Union
 
 import torch
 
@@ -27,7 +27,7 @@ class PerspectiveCamera(object):
 
     def __init__(
         self,
-        intrinsic: typing.Union[torch.Tensor, typing.Dict[str, float]],
+        intrinsic: Union[torch.Tensor, Dict[str, float]],
         extrinsic: torch.Tensor,
         t_near: float,
         t_far: float,
@@ -148,7 +148,7 @@ class PerspectiveCamera(object):
         return self._img_height
 
     @property
-    def focal_lengths(self) -> typing.Tuple[float, float]:
+    def focal_lengths(self) -> Tuple[float, float]:
         """Returns the focal lengths of the camera."""
         return (self._focal_x, self._focal_y)
 

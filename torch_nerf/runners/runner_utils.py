@@ -1,6 +1,6 @@
 """A set of utility functions commonly used in training/testing scripts."""
 
-import typing
+from typing import Tuple
 
 from omegaconf import DictConfig
 import torch
@@ -38,7 +38,7 @@ def init_cuda(cfg: DictConfig) -> None:
 
 def init_dataset_and_loader(
     cfg: DictConfig,
-) -> typing.Tuple[data.Dataset, data.DataLoader]:
+) -> Tuple[data.Dataset, data.DataLoader]:
     """
     Initializes the dataset and loader.
 

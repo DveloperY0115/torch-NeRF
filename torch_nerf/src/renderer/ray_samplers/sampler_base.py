@@ -2,7 +2,7 @@
 Base class for ray samplers.
 """
 
-import typing
+from typing import Tuple
 
 import torch
 import torch_nerf.src.renderer.cameras as cameras
@@ -204,7 +204,7 @@ class RaySamplerBase(object):
         img_width: int,
         ray_origin: torch.Tensor,
         ray_dir: torch.Tensor,
-    ) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Projects ray origin, directions in the world frame to NDC.
 

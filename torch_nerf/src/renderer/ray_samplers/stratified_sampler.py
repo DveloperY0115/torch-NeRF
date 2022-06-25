@@ -2,7 +2,7 @@
 Implementation of Stratified sampler.
 """
 
-import typing
+from typing import Tuple, Union
 
 import torch
 from torch_nerf.src.renderer.ray_samplers.sampler_base import *
@@ -17,7 +17,7 @@ class StratifiedSampler(RaySamplerBase):
     def sample_along_rays(
         self,
         ray_bundle: RayBundle,
-        num_samples: typing.Union[int, typing.Tuple[int, int]],
+        num_samples: Union[int, Tuple[int, int]],
         weights: torch.Tensor = None,
     ) -> torch.Tensor:
         """
@@ -124,7 +124,7 @@ class StratifiedSampler(RaySamplerBase):
         t_far: float,
         num_samples: int,
         num_rays: int,
-    ) -> typing.Tuple[torch.Tensor, float]:
+    ) -> Tuple[torch.Tensor, float]:
         """
         Generates a partition of t's.
 

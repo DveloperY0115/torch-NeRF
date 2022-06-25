@@ -4,7 +4,7 @@ load_blender.py - Utility for loading blender scenes.
 
 import json
 import os
-import typing
+from typing import Dict, List, Tuple
 
 import cv2
 import imageio
@@ -114,13 +114,7 @@ def load_blender_data(
     dataset_type: str,
     half_res: bool = False,
     test_idx_skip: int = 1,
-) -> typing.Tuple[
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    typing.List[float],
-    typing.Dict[str, typing.List],
-]:
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, List[float], Dict[str, List]]:
     """
     Load 'synthetic blender' data.
 

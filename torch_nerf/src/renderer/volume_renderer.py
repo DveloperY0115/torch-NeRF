@@ -7,7 +7,7 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import torch
-import torch_nerf.src.scene as query_struct
+import torch_nerf.src.scene as scene
 import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.src.renderer.integrators as integrators
 import torch_nerf.src.renderer.ray_samplers as ray_samplers
@@ -59,7 +59,7 @@ class VolumeRenderer(object):
 
     def render_scene(
         self,
-        scene: scene.QueryStructBase,
+        target_scene: scene.PrimitiveBase,
         num_pixels: int,
         num_samples: Union[int, Tuple[int, int]],
         project_to_ndc: bool,
@@ -72,7 +72,7 @@ class VolumeRenderer(object):
         Renders the scene by querying underlying 3D inductive bias.
 
         Args:
-            scene (QueryStruct): An instance of class derived from 'QueryStructBase'.
+            target_scene (QueryStruct): An instance of class derived from 'QueryStructBase'.
             num_pixels (int): Number of pixels to render.
                 If smaller than the total number of pixels in the current resolution,
                 sample pixels randomly.
@@ -148,7 +148,7 @@ class VolumeRenderer(object):
 
         # render rays
         pixel_rgb, weights = self._render_ray_batches(
-            scene,
+            target_scene,
             sample_pts,
             ray_dir,
             delta,

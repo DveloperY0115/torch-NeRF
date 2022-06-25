@@ -1,5 +1,5 @@
 """
-Base class for query structures.
+Base class for scene primitives.
 """
 
 from typing import Dict, Optional, Tuple
@@ -8,9 +8,9 @@ import torch
 from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
 
 
-class QueryStructBase(object):
+class PrimitiveBase(object):
     """
-    Query structure base class.
+    Scene primitive base class.
     """
 
     def __init__(

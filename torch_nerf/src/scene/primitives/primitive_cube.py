@@ -1,17 +1,17 @@
 """
-A simple cubic query structure suitable for bounded scenes.
+A simple cubic primitive suitable for forward-facing, bounded scenes.
 """
 
 from typing import Dict, Optional, Tuple
 
 import torch
-from torch_nerf.src.scene.primitives.primitive_base import QueryStructBase
+from torch_nerf.src.scene.primitives.primitive_base import PrimitiveBase
 from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
 
 
-class PrimitiveCube(QueryStructBase):
+class PrimitiveCube(PrimitiveBase):
     """
-    A simple cubic query structure.
+    A simple cubic scene primitive.
 
     Attributes:
         radiance_field (torch.nn.Module): A network representing the scene.
@@ -42,7 +42,7 @@ class PrimitiveCube(QueryStructBase):
         view_dir: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Query 3D scene to retrieve radiance and density values.
+        Query the volume bounded by the cube to retrieve radiance and density values.
 
         Args:
             pos (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).

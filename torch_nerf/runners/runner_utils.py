@@ -6,7 +6,7 @@ from omegaconf import DictConfig
 import torch
 import torch.utils.data as data
 import torch_nerf.src.network as network
-import torch_nerf.src.scene as qs
+import torch_nerf.src.scene as scene
 import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.src.renderer.integrators as integrators
 import torch_nerf.src.renderer.ray_samplers as ray_samplers
@@ -96,7 +96,7 @@ def init_renderer(cfg: DictConfig):
     return renderer
 
 
-def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
+def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
     """
     Initializes the scene representation to be trained / tested.
 
@@ -125,7 +125,7 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
             cfg.network.view_dir_dim,
             cfg.signal_encoder.dir_encode_level,
         )
-        coarse_scene = qs.PrimitiveCube(
+        coarse_scene = scene.PrimitiveCube(
             coarse_network,
             {"coord_enc": coord_enc, "dir_enc": dir_enc},
         )
@@ -135,7 +135,7 @@ def init_scene_repr(cfg: DictConfig) -> qs.QueryStructBase:
             2 * cfg.signal_encoder.coord_encode_level * cfg.network.pos_dim,
             2 * cfg.signal_encoder.dir_encode_level * cfg.network.view_dir_dim,
         ).to(cfg.cuda.device_id)
-        fine_scene = qs.PrimitiveCube(
+        fine_scene = scene.PrimitiveCube(
             fine_network,
             {"coord_enc": coord_enc, "dir_enc": dir_enc},
         )

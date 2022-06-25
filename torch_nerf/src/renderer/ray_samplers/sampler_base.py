@@ -85,8 +85,8 @@ class RaySamplerBase(object):
                 vectors to make them unit vectors.
 
         Returns:
-            An instance of torch.Tensor of shape (N, 3) containing
-            view direction vectors represented in the camera frame.
+            ray_dir (torch.Tensor): An instance of torch.Tensor of shape (N, 3) containing
+                view direction vectors represented in the camera frame.
         """
         # (u, v) -> (x, y)
         pixel_coords = pixel_coords.float()
@@ -124,8 +124,8 @@ class RaySamplerBase(object):
                 A camera extrinsic matrix.
 
         Returns:
-            An instance of torch.Tensor of shape (3,) representing
-            the origin of the camera in the camera frame.
+            ray_origin (torch.Tensor):An instance of torch.Tensor of shape (3,) representing
+                the origin of the camera in the camera frame.
         """
         ray_origin = torch.zeros_like(ray_dir)
 
@@ -149,8 +149,8 @@ class RaySamplerBase(object):
             project_to_ndc (bool):
 
         Returns:
-            An instane of 'RayBundle' containing ray information
-            necessary for volume rendering.
+            ray_bundle (RayBundle): An instane of 'RayBundle' containing ray information
+                necessary for volume rendering.
         """
         # generate ray direction vectors, origin coordinates in the camera frame.
         ray_dir = self._get_ray_directions(

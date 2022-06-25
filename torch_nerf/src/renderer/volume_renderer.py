@@ -192,7 +192,7 @@ class VolumeRenderer(object):
 
     def _render_ray_batches(
         self,
-        scene,
+        target_scene,
         sample_pts: torch.Tensor,
         ray_dir: torch.Tensor,
         delta: torch.Tensor,
@@ -202,11 +202,15 @@ class VolumeRenderer(object):
         Renders an image by dividing its pixels into small batches.
 
         Args:
-            scene ():
-            sample_pts (torch.Tensor):
-            ray_dir (torch.Tensor):
-            delta (torch.Tensor):
-            num_batch (int):
+            target_scene (QueryStruct): An instance of class derived from 'QueryStructBase'.
+            sample_pts (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
+                3D-coordinate of sample points sampled along rays. Here, N is the number of rays
+                in a ray bundle and S is the number of sample points along each ray.
+            ray_dir (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
+                3D-vectors of viewing (ray) directions.
+            delta (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing the
+                difference between adjacent t's.
+            num_batch (int): Number of ray batches to be processed.
 
         Returns:
             pixel_rgb (torch.Tensor):
@@ -220,7 +224,7 @@ class VolumeRenderer(object):
             num_batch + 1,
             dtype=torch.long,
         )
-        partitions[-1] = sample_pts.shape[0]  # numerical issue
+        partitions[-1] = sample_pts.shape[0]  # accomodate numerical issue
 
         for start, end in zip(partitions[0::1], partitions[1::1]):
             pts_batch = sample_pts[start:end, ...]
@@ -228,7 +232,7 @@ class VolumeRenderer(object):
             delta_batch = delta[start:end, ...]
 
             # query the scene to get density and radiance
-            sigma_batch, radiance_batch = scene.query_points(pts_batch, dir_batch)
+            sigma_batch, radiance_batch = target_scene.query_points(pts_batch, dir_batch)
 
             # compute pixel colors by evaluating the volume rendering equation
             rgb_batch, weights_batch = self.integrator.integrate_along_rays(

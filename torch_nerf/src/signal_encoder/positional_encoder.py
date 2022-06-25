@@ -62,8 +62,11 @@ class PositionalEncoder(object):
             ],
         where pos = (x, y, z).
 
-        For details, please refer to 'NeRF: Representing Scenes as
-        Neural Radiance Fields for View Synthesis, Mildenhall et al. (ECCV 2020)'.
+        NOTE: Following the official implementation, this code implements
+        a slightly different encoding scheme:
+            (1) the constant 'pi' in sinusoidals is dropped;
+            (2) the encoding includes the original value 'x' as well;
+        For details, please refer to https://github.com/bmild/nerf/issues/12.
         """
         embed_fns = []
 
@@ -71,9 +74,10 @@ class PositionalEncoder(object):
 
         freq_bands = 2 ** torch.arange(0.0, max_freq_level, dtype=torch.float32)
 
+        embed_fns.append(lambda x: x)
         for freq in freq_bands:
-            embed_fns.append(lambda x, freq=freq: torch.sin(freq * pi * x))
-            embed_fns.append(lambda x, freq=freq: torch.cos(freq * pi * x))
+            embed_fns.append(lambda x, freq=freq: torch.sin(freq * x))
+            embed_fns.append(lambda x, freq=freq: torch.cos(freq * x))
 
         return embed_fns
 

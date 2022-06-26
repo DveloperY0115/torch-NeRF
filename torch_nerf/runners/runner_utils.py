@@ -140,7 +140,8 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
         )
 
         scene_dict["coarse"] = coarse_scene
-
+        print("Initialized 'coarse' scene.")
+        
         # =========================================================
         # initialize 'fine' scene
         # =========================================================
@@ -156,6 +157,9 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
             )
 
             scene_dict["fine"] = fine_scene
+            print("Initialized 'fine' scene.")
+        else:
+            print("Hierarchical sampling disabled. Only 'coarse' scene will be used.")
 
         return scene_dict
     else:

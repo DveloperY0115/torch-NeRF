@@ -3,5 +3,5 @@ data_root: data/nerf_synthetic/lego  # TODO: Create a file that stores path to r
 data_type: train
 batch_size: 1
 shuffle: true
-half_res: true
+half_res: false
 white_bg: true

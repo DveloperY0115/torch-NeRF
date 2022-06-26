@@ -60,11 +60,10 @@ def init_dataset_and_loader(
     else:
         raise ValueError("Unsupported dataset.")
 
-    sampler = data.RandomSampler(dataset, replacement=True)
     loader = data.DataLoader(
         dataset,
         batch_size=cfg.data.batch_size,
-        sampler=sampler,
+        shuffle=cfg.data.shuffle,
         num_workers=4,  # TODO: Adjust dynamically according to cfg.cuda.device_id
     )
 

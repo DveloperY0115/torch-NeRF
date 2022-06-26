@@ -4,6 +4,7 @@ Base class for ray samplers.
 
 from typing import Tuple
 
+import numpy as np
 import torch
 import torch_nerf.src.renderer.cameras as cameras
 

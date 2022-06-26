@@ -155,7 +155,7 @@ class VolumeRenderer(object):
         )
 
         # render rays
-        pixel_rgb, weights = self._render_ray_batches(
+        pixel_rgb, weights, sigma, radiance = self._render_ray_batches(
             target_scene,
             sample_pts,
             ray_dir,
@@ -217,6 +217,8 @@ class VolumeRenderer(object):
         """
         rgb = []
         weights = []
+        sigma = []
+        radiance = []
 
         partitions = torch.linspace(
             0,
@@ -238,10 +240,19 @@ class VolumeRenderer(object):
             rgb_batch, weights_batch = self.integrator.integrate_along_rays(
                 sigma_batch, radiance_batch, delta_batch
             )
+
+            # collect rendering outputs
             rgb.append(rgb_batch)
             weights.append(weights_batch)
+            sigma.append(sigma_batch)
+            radiance.append(radiance_batch)
 
-        return torch.cat(rgb, dim=0), torch.cat(weights, dim=0)
+        pixel_rgb = torch.cat(rgb, dim=0)
+        weights = torch.cat(weights, dim=0)
+        sigma = torch.cat(sigma, dim=0)
+        radiance = torch.cat(radiance, dim=0)
+
+        return pixel_rgb, weights, sigma, radiance
 
     @property
     def camera(self) -> cameras.PerspectiveCamera:

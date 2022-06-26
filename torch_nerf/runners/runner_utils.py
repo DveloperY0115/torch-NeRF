@@ -113,7 +113,11 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
             a key 'coarse' and 'fine', respectively.
     """
     if cfg.scene.type == "cube":
-        # initialize signal encoders
+        scene_dict = {}
+
+        # =========================================================
+        # initialize 'coarse' scene
+        # =========================================================
         coord_enc = pe.PositionalEncoder(
             cfg.network.pos_dim,
             cfg.signal_encoder.coord_encode_level,
@@ -125,29 +129,35 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
             cfg.signal_encoder.include_input,
         )
 
-        # initialize network
         coarse_network = network.NeRFMLP(
             coord_enc.out_dim,
             dir_enc.out_dim,
         ).to(cfg.cuda.device_id)
 
-        # initialize scene
         coarse_scene = scene.PrimitiveCube(
             coarse_network,
             {"coord_enc": coord_enc, "dir_enc": dir_enc},
         )
 
-        # initialize fine network
-        fine_network = network.NeRFMLP(
-            coord_enc.out_dim,
-            dir_enc.out_dim,
-        ).to(cfg.cuda.device_id)
-        fine_scene = scene.PrimitiveCube(
-            fine_network,
-            {"coord_enc": coord_enc, "dir_enc": dir_enc},
-        )
+        scene_dict["coarse"] = coarse_scene
 
-        return {"coarse": coarse_scene, "fine": fine_scene}
+        # =========================================================
+        # initialize 'fine' scene
+        # =========================================================
+        if cfg.renderer.num_samples_fine > 0:
+            fine_network = network.NeRFMLP(
+                coord_enc.out_dim,
+                dir_enc.out_dim,
+            ).to(cfg.cuda.device_id)
+
+            fine_scene = scene.PrimitiveCube(
+                fine_network,
+                {"coord_enc": coord_enc, "dir_enc": dir_enc},
+            )
+
+            scene_dict["fine"] = fine_scene
+
+        return scene_dict
     else:
         raise ValueError("Unsupported scene representation.")
 

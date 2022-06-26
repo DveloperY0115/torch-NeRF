@@ -162,8 +162,7 @@ class RaySamplerBase(object):
         ray_origin = self._get_ray_origin(ray_dir)
 
         # transform the coordinates and vectors into the world frame
-        # ray_dir = ray_dir @ camera.extrinsic[:3, :3]  why this code didn't work?
-        ray_dir = torch.sum(ray_dir[..., np.newaxis, :] * camera.extrinsic[:3, :3], -1)
+        ray_dir = ray_dir @ camera.extrinsic[:3, :3].t()
         ray_origin = ray_origin + camera.extrinsic[:3, -1]
 
         # project rays to NDC

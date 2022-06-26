@@ -4,5 +4,5 @@ scene_name: lego
 data_type: train
 batch_size: 1
 shuffle: true
-half_res: false
+half_res: true
 white_bg: true

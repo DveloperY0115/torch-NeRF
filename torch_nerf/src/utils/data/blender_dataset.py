@@ -76,13 +76,6 @@ class NeRFBlenderDataset(data.Dataset):
                 )
             )
 
-        print("==============================")
-        print("Loaded dataset successfully.")
-        print(f"Number of training data: {self._imgs.shape[0]}")
-        print(f"Image resolution: ({self._img_height}, {self.img_width})")
-        print(f"Focal length(s): ({self._focal_length}, {self._focal_length})")
-        print("==============================")
-
     def __len__(self):
         """Returns the total number of data in the dataset."""
         return self._imgs.shape[0]

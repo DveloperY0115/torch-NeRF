@@ -61,6 +61,14 @@ def init_dataset_and_loader(
     else:
         raise ValueError("Unsupported dataset.")
 
+    print("===========================================")
+    print("Loaded dataset successfully.")
+    print(f"Dataset type: {cfg.data.dataset_type}")
+    print(f"Number of training data: {len(dataset)}")
+    print(f"Image resolution: ({dataset.img_height}, {dataset.img_width})")
+    print(f"Focal length(s): ({dataset.focal_length}, {dataset.focal_length})")
+    print("===========================================")
+
     loader = data.DataLoader(
         dataset,
         batch_size=cfg.data.batch_size,

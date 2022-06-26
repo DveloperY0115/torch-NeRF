@@ -251,21 +251,24 @@ def visualize_train_scene(
             )
 
             num_total_pixel = dataset.img_width * dataset.img_height
+
+            # render coarse scene first
+            pixel_pred, coarse_indices, coarse_weights = renderer.render_scene(
+                scenes["coarse"],
+                num_pixels=num_total_pixel,
+                num_samples=cfg.renderer.num_samples_coarse,
+                project_to_ndc=cfg.renderer.project_to_ndc,
+                device=torch.cuda.current_device(),
+                num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
+            )
             if "fine" in scenes.keys():  # visualize "fine" scene
                 pixel_pred, _, _ = renderer.render_scene(
                     scenes["fine"],
                     num_pixels=num_total_pixel,
-                    num_samples=cfg.renderer.num_samples_coarse + cfg.renderer.num_samples_fine,
+                    num_samples=(cfg.renderer.num_samples_coarse, cfg.renderer.num_samples_fine),
                     project_to_ndc=cfg.renderer.project_to_ndc,
-                    device=torch.cuda.current_device(),
-                    num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
-                )
-            else:  # visualize "coarse" scene
-                pixel_pred, _, _ = renderer.render_scene(
-                    scenes["coarse"],
-                    num_pixels=num_total_pixel,
-                    num_samples=cfg.renderer.num_samples_coarse,
-                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    pixel_indices=coarse_indices,
+                    weights=coarse_weights,
                     device=torch.cuda.current_device(),
                     num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
                 )

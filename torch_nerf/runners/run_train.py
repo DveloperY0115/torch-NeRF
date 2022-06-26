@@ -30,7 +30,7 @@ def save_ckpt(
 
     Args:
         epoch (int):
-        scene (Dict):
+        scenes (Dict):
         optimizer ():
         scheduler ():
     """
@@ -55,15 +55,16 @@ def save_ckpt(
 
 def load_ckpt(
     ckpt_file,
-    scene,
+    scenes,
     optimizer,
-    scheduler,
+    scheduler=None,
 ) -> int:
     """
     Loads the checkpoint.
 
     Args:
-        scene ():
+        ckpt_file (str): A path to the checkpoint file.
+        scenes ():
         optimizer ():
         scheduler ():
 
@@ -77,9 +78,21 @@ def load_ckpt(
         return epoch
 
     ckpt = torch.load(ckpt_file, map_location="cpu")
-    scene.radiance_field.load_state_dict(ckpt)
-    print("Radiance field weight loaded.")
-    print("TODO: Update codes for checkpointing")
+
+    # load epoch
+    epoch = ckpt["epoch"]
+
+    # load scene
+    for scene_type, scene in scenes.items():
+        scene.radiance_field.load_state_dict(ckpt[f"scene_{scene_type}"])
+        scene.radiance_field.to(torch.cuda.current_device())
+
+    # load optimizer and scheduler states
+    optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+    if not scheduler is None:
+        scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+
+    print("Checkpoint loaded.")
     return epoch
 
 
@@ -288,7 +301,7 @@ def main(cfg: DictConfig) -> None:
     loss_func = runner_utils.init_objective_func(cfg)
 
     # load if checkpoint exists
-    load_ckpt(
+    start_epoch = load_ckpt(
         cfg.train_params.ckpt.path,
         scenes,
         optimizer,
@@ -302,7 +315,7 @@ def main(cfg: DictConfig) -> None:
     writer = SummaryWriter(log_dir=tb_log_dir)
 
     # train the model
-    for epoch in tqdm(range(cfg.train_params.optim.num_iter // len(dataset))):
+    for epoch in tqdm(range(start_epoch, cfg.train_params.optim.num_iter // len(dataset))):
         # train
         losses = train_one_epoch(
             cfg, scenes, renderer, dataset, loader, loss_func, optimizer, scheduler

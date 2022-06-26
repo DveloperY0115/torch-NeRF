@@ -60,10 +60,11 @@ def init_dataset_and_loader(
     else:
         raise ValueError("Unsupported dataset.")
 
+    sampler = data.RandomSampler(dataset, replacement=True)
     loader = data.DataLoader(
         dataset,
         batch_size=cfg.data.batch_size,
-        shuffle=cfg.data.shuffle,
+        sampler=sampler,
         num_workers=4,  # TODO: Adjust dynamically according to cfg.cuda.device_id
     )
 
@@ -141,7 +142,7 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
 
         scene_dict["coarse"] = coarse_scene
         print("Initialized 'coarse' scene.")
-        
+
         # =========================================================
         # initialize 'fine' scene
         # =========================================================

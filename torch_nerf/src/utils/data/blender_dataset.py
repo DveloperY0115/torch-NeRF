@@ -2,6 +2,7 @@
 blender_dataset.py - Abstraction on Pytorch dataset.
 """
 
+import os
 from typing import Tuple
 
 import torch
@@ -21,6 +22,7 @@ class NeRFBlenderDataset(data.Dataset):
     def __init__(
         self,
         root_dir: str,
+        scene_name: str,
         data_type: str,
         half_res: bool,
         white_bg: bool = True,
@@ -30,6 +32,7 @@ class NeRFBlenderDataset(data.Dataset):
 
         Args:
             root_dir (str): A string indicating the root directory of the dataset.
+            scene_name (str): A string indicating the name of the Blender scene.
             data_type (str): A string indicating the type of the dataset.
             half_res (bool): A flag that determines whether to half the image resolution.
             white_bg (bool): A flag that determines whether to make background of images white.
@@ -40,10 +43,17 @@ class NeRFBlenderDataset(data.Dataset):
             raise ValueError(
                 f"Unsupported dataset type. Expected one of {data_types}. Got {data_type}"
             )
+        scene_names = ["chair", "drums", "ficus", "hotdog", "lego", "materials", "mic", "ship"]
+        if not scene_name in scene_names:
+            raise ValueError(
+                f"Unsupported scene type. Expected one of {scene_names}. Got {scene_name}."
+            )
+        if not os.path.exists(root_dir):
+            raise ValueError(f"The directory {root_dir} does not exist.")
 
         super().__init__()
 
-        self._root_dir = root_dir
+        self._root_dir = str(os.path.join(root_dir, scene_name))
         self._data_type = data_type
         self._white_bg = white_bg
 

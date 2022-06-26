@@ -147,7 +147,7 @@ class VolumeRenderer(object):
         # =====================================================================
 
         # sample points along rays
-        sample_pts, ray_dir, delta = self.sampler.sample_along_rays(
+        sample_pts, ray_dir, delta_t = self.sampler.sample_along_rays(
             ray_bundle,
             num_samples,
             device=device,
@@ -159,7 +159,7 @@ class VolumeRenderer(object):
             target_scene,
             sample_pts,
             ray_dir,
-            delta,
+            delta_t,
             num_batch=1 if num_ray_batch is None else num_ray_batch,
         )
 
@@ -195,7 +195,7 @@ class VolumeRenderer(object):
         target_scene,
         sample_pts: torch.Tensor,
         ray_dir: torch.Tensor,
-        delta: torch.Tensor,
+        delta_t: torch.Tensor,
         num_batch: int,
     ) -> torch.Tensor:
         """
@@ -208,7 +208,7 @@ class VolumeRenderer(object):
                 in a ray bundle and S is the number of sample points along each ray.
             ray_dir (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
                 3D-vectors of viewing (ray) directions.
-            delta (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing the
+            delta_t (torch.Tensor): An instance of torch.Tensor of shape (N, S) representing the
                 difference between adjacent t's.
             num_batch (int): Number of ray batches to be processed.
 
@@ -228,10 +228,13 @@ class VolumeRenderer(object):
         )
         partitions[-1] = sample_pts.shape[0]  # accomodate numerical issue
 
+        # compute delta 'z'
+        delta_z = delta_t * torch.linalg.vector_norm(ray_dir, axis=-1)
+
         for start, end in zip(partitions[0::1], partitions[1::1]):
             pts_batch = sample_pts[start:end, ...]
             dir_batch = ray_dir[start:end, ...]
-            delta_batch = delta[start:end, ...]
+            delta_batch = delta_z[start:end, ...]
 
             # query the scene to get density and radiance
             sigma_batch, radiance_batch = target_scene.query_points(pts_batch, dir_batch)

@@ -156,7 +156,7 @@ class RaySamplerBase(object):
         ray_dir = self._get_ray_directions(
             pixel_coords,
             camera.intrinsic,
-            normalize=True,
+            normalize=False,
         )
         ray_origin = self._get_ray_origin(ray_dir)
 

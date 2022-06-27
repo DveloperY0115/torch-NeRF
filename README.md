@@ -30,7 +30,7 @@ You may use any tools of your preference such as `conda`. Our codes should repro
 To download the synthetic dataset for training, issue the following command in the shell:
 
 ```
-sh scripts/data/download_example_data.sh
+$ sh scripts/data/download_example_data.sh
 ```
 
 This should create `data` directory under the project root (`torch-NeRF` by default) and download datasets provided by the authors of NeRF (ECCV 2020).
@@ -38,7 +38,7 @@ This should create `data` directory under the project root (`torch-NeRF` by defa
 The configuration is set for `lego` scene included in `Blender` dataset. Executing the following command will initiate training:
 
 ```
-python torch_nerf/runners/run_train.py
+$ python torch_nerf/runners/run_train.py
 ```
 
 Once a scene representation is trained, it can be rendered using the script `run_render.py` under `torch_nerf/runners` directory. Note that you need to specify the path to the checkpoint file by modifying the file under `config/train_params`.

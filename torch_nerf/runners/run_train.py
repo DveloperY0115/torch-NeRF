@@ -18,84 +18,6 @@ import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.runners.runner_utils as runner_utils
 
 
-def save_ckpt(
-    ckpt_dir: str,
-    epoch: int,
-    scenes,
-    optimizer,
-    scheduler,
-) -> None:
-    """
-    Saves the checkpoint.
-
-    Args:
-        epoch (int):
-        scenes (Dict):
-        optimizer ():
-        scheduler ():
-    """
-    if not os.path.exists(ckpt_dir):
-        os.makedirs(ckpt_dir)
-    ckpt_file = os.path.join(ckpt_dir, f"ckpt_{str(epoch).zfill(6)}.pth")
-
-    ckpt = {
-        "epoch": epoch,
-        "optimizer_state_dict": optimizer.state_dict(),
-        "scheduler_state_dict": scheduler.state_dict(),
-    }
-
-    for scene_type, scene in scenes.items():
-        ckpt[f"scene_{scene_type}"] = scene.radiance_field.state_dict()
-
-    torch.save(
-        ckpt,
-        ckpt_file,
-    )
-
-
-def load_ckpt(
-    ckpt_file,
-    scenes,
-    optimizer,
-    scheduler=None,
-) -> int:
-    """
-    Loads the checkpoint.
-
-    Args:
-        ckpt_file (str): A path to the checkpoint file.
-        scenes ():
-        optimizer ():
-        scheduler ():
-
-    Returns:
-        epoch: The epoch from where training continues.
-    """
-    epoch = 0
-
-    if ckpt_file is None or not os.path.exists(ckpt_file):
-        print("Checkpoint file not found.")
-        return epoch
-
-    ckpt = torch.load(ckpt_file, map_location="cpu")
-
-    # load epoch
-    epoch = ckpt["epoch"]
-
-    # load scene
-    for scene_type, scene in scenes.items():
-        scene.radiance_field.load_state_dict(ckpt[f"scene_{scene_type}"])
-        scene.radiance_field.to(torch.cuda.current_device())
-
-    # load optimizer and scheduler states
-    optimizer.load_state_dict(ckpt["optimizer_state_dict"])
-    if not scheduler is None:
-        scheduler.load_state_dict(ckpt["scheduler_state_dict"])
-
-    print("Checkpoint loaded.")
-    return epoch
-
-
 def train_one_epoch(
     cfg,
     scenes,
@@ -289,7 +211,7 @@ def visualize_train_scene(
     config_name="config",
 )
 def main(cfg: DictConfig) -> None:
-    """The entry point of train."""
+    """The entry point of training code."""
     # identify log directory
     log_dir = HydraConfig.get().runtime.output_dir
 
@@ -304,7 +226,7 @@ def main(cfg: DictConfig) -> None:
     loss_func = runner_utils.init_objective_func(cfg)
 
     # load if checkpoint exists
-    start_epoch = load_ckpt(
+    start_epoch = runner_utils.load_ckpt(
         cfg.train_params.ckpt.path,
         scenes,
         optimizer,
@@ -330,7 +252,7 @@ def main(cfg: DictConfig) -> None:
         if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:
             ckpt_dir = os.path.join(log_dir, "ckpt")
 
-            save_ckpt(
+            runner_utils.save_ckpt(
                 ckpt_dir,
                 epoch,
                 scenes,

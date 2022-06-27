@@ -9,7 +9,9 @@ Pytorch implementation of **NeRF: Representing Scenes as Neural Radiance Fields 
 |*NeRF Overview.* Figure from the [project page](https://www.matthewtancik.com/nerf) of NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis, Mildenhall et al., ECCV 2020. |
 
 ## Get Started
+
 To configure the Python virtual environment and install dependencies, open the shell and run the following commands:
+
 ```
 # Clone the repository
 $ git clone https://github.com/DveloperY0115/torch-NeRF.git
@@ -22,24 +24,28 @@ $ source venv/bin/activate
 # Install dependencies
 $ pip3 install -r requirements.txt
 ```
+
 You may use any tools of your preference such as `conda`. Our codes should reproduce the results regardless of which dependency management tool is used as long as the same versions of dependencies are installed.
 
 To download the synthetic dataset for training, issue the following command in the shell:
+
 ```
-$ sh scripts/data/download_example_data.sh
+sh scripts/data/download_example_data.sh
 ```
+
 This should create `data` directory under the project root (`torch-NeRF` by default) and download datasets provided by the authors of NeRF (ECCV 2020).
 
 The configuration is set for `lego` scene included in `Blender` dataset. Executing the following command will initiate training:
+
 ```
-$ python torch_nerf/runners/run_train.py
+python torch_nerf/runners/run_train.py
 ```
 
 Once a scene representation is trained, it can be rendered using the script `run_render.py` under `torch_nerf/runners` directory. Note that you need to specify the path to the checkpoint file by modifying the file under `config/train_params`.
 
 The rendering script stores rendered images in `render_out` directory under the project root. To create a video from the collection of consecutive frames, use the script `scripts/utils/create_video.py`. The final result is shown below.
 
-
+![lego.gif](./media/lego.gif)
 
 ## Documentation
 

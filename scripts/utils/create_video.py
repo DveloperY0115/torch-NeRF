@@ -20,7 +20,7 @@ def main():
         f"{args.vid_title}.mp4",
         format="FFMPEG",
         mode="I",
-        fps=5,
+        fps=24,
     )
 
     for img in imgs:

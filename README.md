@@ -32,6 +32,7 @@ You may use any tools of your preference such as `conda`. Our codes should repro
 - [ ] Extend the implementation to [Mip-NeRF: A Multiscale Representation for Anti-Aliasing Neural Radiance Fields (ICCV 2021)](https://arxiv.org/abs/2103.13415).
 - [ ] Extend the implementation to [Mip-NeRF 360: Unbounded Anti-Aliased Neural Radiance Fields (CVPR 2022)](https://jonbarron.info/mipnerf360/).
 - [ ] Extend the implementation to [NeRF in the Dark: High Dynamic Range View Synthesis from Noisy Raw Images (CVPR 2022)](https://bmild.github.io/rawnerf/).
+- [ ] Extend the implementation to [Neural 3D Scene Reconstruction with the Manhattan-world Assumption (CVPR 2022)](https://zju3dv.github.io/manhattan_sdf/).
 - [ ] Extend the implementation to [Urban Radiance Fields (CVPR 2022)](https://urban-radiance-fields.github.io).
 - [ ] Extend the implementation to [Block-NeRF: Scalable Large Scene Neural View Synthesis (CVPR 2022)](https://waymo.com/research/block-nerf/).
 - [ ] Adapt techniques for accelerating training \& inference. The selected candidates are listed below (subject to change):

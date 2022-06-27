@@ -4,6 +4,7 @@ Base class for integrators.
 
 import torch
 
+
 class IntegratorBase(object):
     """
     Base class for integrators.

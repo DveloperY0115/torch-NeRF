@@ -407,11 +407,11 @@ def visualize_scene(
                 )
 
             # (H * W, C) -> (C, H, W)
-            pixel_pred = pixel_pred.reshape(img_height, dataset.img_width, -1)
+            pixel_pred = pixel_pred.reshape(img_height, img_width, -1)
             pixel_pred = pixel_pred.permute(2, 0, 1)
 
             # save the image
             tvu.save_image(
                 pixel_pred,
-                os.path.join(pred_img_dir, f"{str(view_idx).zfill(5)}.png"),
+                os.path.join(pred_img_dir, f"{str(pose_idx).zfill(5)}.png"),
             )

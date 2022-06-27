@@ -124,87 +124,6 @@ def train_one_epoch(
     }
 
 
-def visualize_train_scene(
-    cfg,
-    scenes,
-    renderer,
-    dataset,
-    save_dir: str,
-    num_imgs: int = 1,
-):
-    """
-    Visualizes the scene being trained.
-
-    Args:
-        cfg (DictConfig): A config object holding parameters required
-            to setup scene representation.
-        scenes (Dict): A dictionary of neural scene representation(s).
-        renderer (VolumeRenderer): Volume renderer used to render the scene.
-        dataset (torch.utils.data.Dataset): Dataset for training data.
-        save_dir (str): Directory to store render outputs.
-    """
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir, exist_ok=True)
-
-    pred_img_dir = os.path.join(save_dir, "pred_imgs")
-    if not os.path.exists(pred_img_dir):
-        os.mkdir(pred_img_dir)
-
-    loader = torch.utils.data.DataLoader(dataset, shuffle=True)
-    with torch.no_grad():
-        for view_idx, batch in tqdm(enumerate(loader)):
-            if view_idx >= num_imgs:
-                break
-
-            _, extrinsic = batch
-            extrinsic = extrinsic.squeeze()
-
-            # set the camera
-            renderer.camera = cameras.PerspectiveCamera(
-                {
-                    "f_x": dataset.focal_length,
-                    "f_y": dataset.focal_length,
-                    "img_width": dataset.img_width,
-                    "img_height": dataset.img_height,
-                },
-                extrinsic,
-                cfg.renderer.t_near,
-                cfg.renderer.t_far,
-            )
-
-            num_total_pixel = dataset.img_width * dataset.img_height
-
-            # render coarse scene first
-            pixel_pred, coarse_indices, coarse_weights = renderer.render_scene(
-                scenes["coarse"],
-                num_pixels=num_total_pixel,
-                num_samples=cfg.renderer.num_samples_coarse,
-                project_to_ndc=cfg.renderer.project_to_ndc,
-                device=torch.cuda.current_device(),
-                num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
-            )
-            if "fine" in scenes.keys():  # visualize "fine" scene
-                pixel_pred, _, _ = renderer.render_scene(
-                    scenes["fine"],
-                    num_pixels=num_total_pixel,
-                    num_samples=(cfg.renderer.num_samples_coarse, cfg.renderer.num_samples_fine),
-                    project_to_ndc=cfg.renderer.project_to_ndc,
-                    pixel_indices=coarse_indices,
-                    weights=coarse_weights,
-                    device=torch.cuda.current_device(),
-                    num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
-                )
-
-            # (H * W, C) -> (C, H, W)
-            pixel_pred = pixel_pred.reshape(dataset.img_height, dataset.img_width, -1)
-            pixel_pred = pixel_pred.permute(2, 0, 1)
-
-            tvu.save_image(
-                pixel_pred,
-                os.path.join(pred_img_dir, f"{str(view_idx).zfill(5)}.png"),
-            )
-
-
 @hydra.main(
     version_base=None,
     config_path="../configs",  # config file search path is relative to this script
@@ -267,12 +186,20 @@ def main(cfg: DictConfig) -> None:
                 f"vis/epoch_{epoch}",
             )
 
-            visualize_train_scene(
+            runner_utils.visualize_scene(
                 cfg,
                 scenes,
                 renderer,
-                dataset,
-                save_dir,
+                intrinsics={
+                    "f_x": dataset.focal_length,
+                    "f_y": dataset.focal_length,
+                    "img_width": dataset.img_width,
+                    "img_height": dataset.img_height,
+                },
+                extrinsics=dataset.render_poses,
+                img_res=(dataset.img_height, dataset.img_width),
+                save_dir=save_dir,
+                num_imgs=1,
             )
 
     writer.flush()

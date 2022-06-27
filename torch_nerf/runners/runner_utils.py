@@ -1,10 +1,13 @@
 """A set of utility functions commonly used in training/testing scripts."""
 
-from typing import Tuple
+import os
+from typing import Dict, Tuple, Union
 
 from omegaconf import DictConfig
 import torch
 import torch.utils.data as data
+import torchvision.utils as tvu
+from tqdm import tqdm
 import torch_nerf.src.network as network
 import torch_nerf.src.scene as scene
 import torch_nerf.src.renderer.cameras as cameras
@@ -326,3 +329,89 @@ def load_ckpt(
 
     print("Checkpoint loaded.")
     return epoch
+
+
+def visualize_scene(
+    cfg,
+    scenes,
+    renderer,
+    intrinsics: Union[Dict, torch.Tensor],
+    extrinsics: torch.Tensor,
+    img_res: Tuple[int, int],
+    save_dir: str,
+    num_imgs: int = None,
+):
+    """
+    Visualizes the given scenes.
+
+    If multiple scene representations are provided (e.g., coarse and fine scenes in hierarchical
+    sampling), render the one that outputs the highest quality image.
+
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup scene representation.
+        scenes (Dict): A dictionary of neural scene representation(s).
+        renderer (VolumeRenderer): Volume renderer used to render the scene.
+        intrinsics (Dict | torch.Tensor): A dictionary containing camera intrinsic parameters or
+            the intrinsic matrix.
+        extrinsics (torch.Tensor): An instance of torch.Tensor of shape (N, 4, 4)
+            where N is the number of camera poses included in the trajectory.
+        img_res (Tuple): A 2-tuple of form (img_height, img_width).
+        save_dir (str): Directory to store render outputs.
+        num_imgs (int): The number of images to be rendered. If not explicitly set,
+            images will be rendered from all camera poses provided.
+    """
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir, exist_ok=True)
+
+    pred_img_dir = os.path.join(save_dir, "pred_imgs")
+    if not os.path.exists(pred_img_dir):
+        os.mkdir(pred_img_dir)
+
+    with torch.no_grad():
+        for pose_idx, extrinsic in tqdm(enumerate((extrinsics))):
+            if not num_imgs is None:
+                if pose_idx >= num_imgs:
+                    break
+
+            # set the camera
+            renderer.camera = cameras.PerspectiveCamera(
+                intrinsics,
+                extrinsic,
+                cfg.renderer.t_near,
+                cfg.renderer.t_far,
+            )
+
+            img_height, img_width = img_res
+            num_total_pixel = img_height * img_width
+
+            # render coarse scene first
+            pixel_pred, coarse_indices, coarse_weights = renderer.render_scene(
+                scenes["coarse"],
+                num_pixels=num_total_pixel,
+                num_samples=cfg.renderer.num_samples_coarse,
+                project_to_ndc=cfg.renderer.project_to_ndc,
+                device=torch.cuda.current_device(),
+                num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
+            )
+            if "fine" in scenes.keys():  # visualize "fine" scene
+                pixel_pred, _, _ = renderer.render_scene(
+                    scenes["fine"],
+                    num_pixels=num_total_pixel,
+                    num_samples=(cfg.renderer.num_samples_coarse, cfg.renderer.num_samples_fine),
+                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    pixel_indices=coarse_indices,
+                    weights=coarse_weights,
+                    device=torch.cuda.current_device(),
+                    num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
+                )
+
+            # (H * W, C) -> (C, H, W)
+            pixel_pred = pixel_pred.reshape(img_height, dataset.img_width, -1)
+            pixel_pred = pixel_pred.permute(2, 0, 1)
+
+            # save the image
+            tvu.save_image(
+                pixel_pred,
+                os.path.join(pred_img_dir, f"{str(view_idx).zfill(5)}.png"),
+            )

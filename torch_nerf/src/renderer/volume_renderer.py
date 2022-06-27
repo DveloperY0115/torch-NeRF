@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch_nerf.src.scene as scene
 import torch_nerf.src.renderer.cameras as cameras
-import torch_nerf.src.renderer.integrators as integrators
+import torch_nerf.src.renderer.integrators.quadrature_integrator as integrators
 import torch_nerf.src.renderer.ray_samplers as ray_samplers
 
 

@@ -43,9 +43,14 @@ $ python torch_nerf/runners/run_train.py
 
 Once a scene representation is trained, it can be rendered using the script `run_render.py` under `torch_nerf/runners` directory. Note that you need to specify the path to the checkpoint file by modifying the file under `config/train_params`.
 
-The rendering script stores rendered images in `render_out` directory under the project root. To create a video from the collection of consecutive frames, use the script `scripts/utils/create_video.py`. The final result is shown below.
+The rendering script stores rendered images in `render_out` directory under the project root. To create a video from the collection of consecutive frames, use the script `scripts/utils/create_video.py`. The results obtained from various synthetic scenes are shown below.
 
-![lego.gif](./media/lego.gif)
+<p align="middle">
+  <img src="./media/lego.gif" width="150" />
+  <img src="./media/ship.gif" width="150" />
+  <img src="./media/materials.gif" width="150" />
+  <img src="./media/hotdog.gif" width="150" / >
+</p>
 
 ## Documentation
 

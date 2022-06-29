@@ -213,7 +213,14 @@ class VolumeRenderer(object):
             num_batch (int): Number of ray batches to be processed.
 
         Returns:
-            pixel_rgb (torch.Tensor):
+            pixel_rgb (torch.Tensor): An instance of torch.Tensor of shape (N, 3).
+                The pixel intensities determined by integrating radiance values along each ray.
+            weights (torch.Tensor): An instance of torch.Tensor of shape (N, S).
+                The weight obtained by multiplying transmittance and alpha during numerical integration.
+            sigma (torch.Tensor): An instance of torch.Tensor of shape (N, S).
+                Estimated densities at sample points.
+            radiance (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
+                Estimated radiance values at sample points.
         """
         rgb = []
         weights = []
@@ -228,13 +235,10 @@ class VolumeRenderer(object):
         )
         partitions[-1] = sample_pts.shape[0]  # accomodate numerical issue
 
-        # compute delta 'z'
-        delta_z = delta_t * torch.linalg.vector_norm(ray_dir, axis=-1)
-
         for start, end in zip(partitions[0::1], partitions[1::1]):
             pts_batch = sample_pts[start:end, ...]
             dir_batch = ray_dir[start:end, ...]
-            delta_batch = delta_z[start:end, ...]
+            delta_batch = delta_t[start:end, ...]
 
             # query the scene to get density and radiance
             sigma_batch, radiance_batch = target_scene.query_points(pts_batch, dir_batch)

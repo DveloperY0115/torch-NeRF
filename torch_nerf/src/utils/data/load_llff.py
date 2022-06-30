@@ -66,28 +66,41 @@ def _minify(basedir, factors=[], resolutions=[]):
 
 def _load_data(
     base_dir: str,
-    factor=None,
-    img_width: int = None,
-    img_height: int = None,
-) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    factor: Optional[int] = None,
+    img_width: Optional[int] = None,
+    img_height: Optional[int] = None,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Loads camera parameters, scene bounds, and images.
 
     Args:
-        base_dir (str):
+        base_dir (str): A string indicating the base directory of the dataset.
         factor (int):
-        img_width (int):
-        img_height (int):
+        img_width (int): The desired width of the output images.
+            Set to None by default.
+        img_height (int): The desired height of the output images.
+            Set to None by default.
 
     Returns:
-        imgs (np.ndarray):
-        poses (np.ndarray):
-        z_bounds (np.ndarray):
+        imgs (np.ndarray): An instance of np.ndarray of shape ().
+
+        extrinsics (np.ndarray): An instance of np.ndarray of shape ().
+
+        intrinsics (np.ndarray): An instance of np.ndarray of shape ().
+
+        z_bounds (np.ndarray): An instance of np.ndarray of shape ().
+
     """
     # load the camera parameters and scene z-bounds
     poses_raw = np.load(os.path.join(base_dir, "poses_bounds.npy"))
-    poses = poses_raw[:, :-2].reshape([-1, 3, 5]).transpose([1, 2, 0])  # (N, 15) -> (3, 5, N)
+    camera_params = (
+        poses_raw[:, :-2].reshape([-1, 3, 5]).transpose([1, 2, 0])
+    )  # (N, 15) -> (3, 5, N)
     z_bounds = poses_raw[:, -2:].transpose([1, 0])  # (N, 2) -> (2, N)
+
+    # parse extrinsics and intrinsics
+    extrinsics = camera_params[:, :-1, :]  # (3, 4, N)
+    intrinsics = camera_params[:, -1, :]  # (3, N)
 
     img0 = [
         os.path.join(base_dir, "images", f)
@@ -116,28 +129,45 @@ def _load_data(
     else:
         factor = 1
 
+    # check whether the image directory exists
     img_dir = os.path.join(base_dir, "images" + suffix)
     if not os.path.exists(img_dir):
         raise ValueError(f"The base directory of dataset {img_dir} does not exist.")
 
-    # identify file to be read
+    # identify files to be read
     img_files = [
         os.path.join(img_dir, f)
         for f in sorted(os.listdir(img_dir))
         if f.endswith("JPG") or f.endswith("jpg") or f.endswith("png")
     ]
-    if poses.shape[-1] != len(img_files):
-        raise ValueError(f"Mismatch between imgs {len(img_files)} and poses {poses.shape[-1]}.")
+    if camera_params.shape[-1] != len(img_files):
+        raise ValueError(
+            f"Mismatch between imgs {len(img_files)} and poses {camera_params.shape[-1]}."
+        )
 
+    # update the intrinsics (the size of images has probably changed)
     img_shape = imageio.imread(img_files[0]).shape
-    poses[:2, 4, :] = np.array(img_shape[:2]).reshape([2, 1])
-    poses[2, 4, :] = poses[2, 4, :] * 1.0 / factor
+    intrinsics[:2, :] = np.array(img_shape[:2]).reshape([2, 1])  # update height, width
+    intrinsics[2, :] *= 1.0 / factor  # update focal length
 
+    # Correct rotation matrix ordering and move variable dim to axis 0
+    # Please refer to the issue for details: https://github.com/bmild/nerf/issues/34
+    extrinsics = np.concatenate(
+        [extrinsics[:, 1:2, :], -extrinsics[:, 0:1, :], extrinsics[:, 2:, :]],
+        axis=1,
+    )
+
+    # load images
     imgs = [imread(file)[..., :3] / 255.0 for file in img_files]
     imgs = np.stack(imgs, axis=-1)
 
-    print("Loaded camera poses, scene bounds, and image data.")
-    return imgs, poses, z_bounds
+    # swap the ordering of axes - (*, N) -> (N, *)
+    imgs = np.moveaxis(imgs, source=-1, destination=0).astype(np.float32)
+    extrinsics = np.moveaxis(extrinsics, source=-1, destination=0).astype(np.float32)
+    intrinsics = np.moveaxis(intrinsics, source=-1, destination=0).astype(np.float32)
+    z_bounds = np.moveaxis(z_bounds, source=-1, destination=0).astype(np.float32)
+
+    return imgs, extrinsics, intrinsics, z_bounds
 
 
 def imread(img_file: str) -> np.ndarray:

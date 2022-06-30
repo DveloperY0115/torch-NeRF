@@ -222,18 +222,49 @@ def poses_avg(poses: np.ndarray) -> np.ndarray:
     return avg_camera_to_world
 
 
-def render_path_spiral(c2w, up, rads, focal, zdelta, zrate, rots, N):
+def render_path_spiral(
+    camera_to_world: np.ndarray,
+    up_vec: np.ndarray,
+    radiuses: np.ndarray,
+    focal: float,
+    z_delta: float,
+    z_rate: float,
+    rots: int,
+    N: int,
+) -> np.ndarray:
+    """
+    Computes the series of camera poses that consititutes the spiral-like
+    trajectory. The poses are used for rendering novel views.
+
+    Args:
+        camera_to_world (np.ndarray): An instance of np.ndarray of shape ().
+        up_vec (np.ndarray): An instance of np.ndarray of shape ().
+        rads (np.ndarray): An instance of np.ndarray of shape ().
+        focal (float):
+        z_delta (float):
+        z_rate (float): The rate of change of displacement along z-axis.
+        rots (int): Number of rotations around the spiral axis.
+        N (int): Number of key frame positions.
+
+    Returns:
+        render_poses (np.ndarray): An instance of np.ndarray of shape ().
+            The consecutive camera poses constituting the spiral trajectory.
+    """
     render_poses = []
-    rads = np.array(list(rads) + [1.0])
-    hwf = c2w[:, 4:5]
+    radiuses = np.array(list(radiuses) + [1.0])
+    hwf = camera_to_world[:, 4:5]
 
     for theta in np.linspace(0.0, 2.0 * np.pi * rots, N + 1)[:-1]:
-        c = np.dot(
-            c2w[:3, :4],
-            np.array([np.cos(theta), -np.sin(theta), -np.sin(theta * zrate), 1.0]) * rads,
+        camera_position = np.dot(
+            camera_to_world[:3, :4],
+            np.array([np.cos(theta), -np.sin(theta), -np.sin(theta * z_rate), 1.0]) * radiuses,
         )
-        z = normalize(c - np.dot(c2w[:3, :4], np.array([0, 0, -focal, 1.0])))
-        render_poses.append(np.concatenate([viewmatrix(z, up, c), hwf], 1))
+        z_vec = normalize(
+            camera_position - np.dot(camera_to_world[:3, :4], np.array([0, 0, -focal, 1.0]))
+        )
+        render_poses.append(
+            np.concatenate([build_extrinsic(z_vec, up_vec, camera_position), hwf], 1)
+        )
     return render_poses
 
 

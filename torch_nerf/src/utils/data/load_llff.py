@@ -331,16 +331,16 @@ def recenter_poses(poses: np.ndarray) -> np.ndarray:
     Recenter poses with respect to their "central" pose.
 
     Args:
-        poses (np.ndarray): An instance of np.ndarray of shape ().
-
+        poses (np.ndarray): An instance of np.ndarray of shape (N, 3, 4).
+            Camera extrinsic matrices represented in the form of Affine matrices.
     Returns:
-        poses (np.ndarray): An instance of np.ndarray of shape ().
+        poses (np.ndarray): An instance of np.ndarray of shape (N, 3, 4).
             The camera poses adjusted according to their statistics (i.e., the central pose).
     """
     poses_ = poses + 0
     bottom = np.reshape([0, 0, 0, 1.0], [1, 4])
     camera_to_world = poses_avg(poses)
-    camera_to_world = np.concatenate([camera_to_world[:3, :4], bottom], -2)
+    camera_to_world = np.concatenate([camera_to_world, bottom], -2)
     bottom = np.tile(np.reshape(bottom, [1, 1, 4]), [poses.shape[0], 1, 1])
     poses = np.concatenate([poses[:, :3, :4], bottom], -2)
 

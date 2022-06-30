@@ -261,23 +261,20 @@ def poses_avg(poses: np.ndarray) -> np.ndarray:
         (2) https://github.com/bmild/nerf/issues/34
 
     Args:
-        poses (np.ndarray): An instance of np.ndarray of shape (*, 3, 5).
+        poses (np.ndarray): An instance of np.ndarray of shape (*, 3, 4).
             The camera poses associated with the images of a scene.
-            Specifically, the last column of the array holds additional data
-            - height of images, width of images, and focal length of images.
 
     Returns:
-        avg_camera_to_world (np.ndarray): An instance of np.ndarray of shape (3, 5).
+        avg_camera_to_world (np.ndarray): An instance of np.ndarray of shape (3, 4).
             The array holding the average camera pose matrix and additional data.
     """
-    hwf = poses[0, :3, -1:]
-
     mean_position = poses[:, :3, 3].mean(axis=0)
     mean_z = normalize(poses[:, :3, 2].sum(axis=0))
     mean_y = poses[:, :3, 1].sum(axis=0)  # regard mean y-axis as "up" vector
-    avg_camera_to_world = np.concatenate(
-        [build_extrinsic(mean_z, mean_y, mean_position), hwf],
-        axis=1,
+    avg_camera_to_world = build_extrinsic(
+        mean_z,
+        mean_y,
+        mean_position,
     )
 
     return avg_camera_to_world

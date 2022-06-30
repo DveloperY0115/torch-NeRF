@@ -1,9 +1,13 @@
 """
-Slightly modified version of LLFF data loading code 
-see https://github.com/Fyusion/LLFF for original
+Utility functions for loading LLFF data.
+
+The code was brought from the official implementation of NeRF (ECCV 2020)
+(https://github.com/bmild/nerf/blob/master/load_llff.py) and slightly modified 
+in terms of naming conventions, documentations, etc.
 """
 
 import os
+from typing import List, Optional, Tuple
 
 import imageio
 import numpy as np

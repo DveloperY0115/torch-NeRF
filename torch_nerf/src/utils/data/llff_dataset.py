@@ -3,6 +3,7 @@ llff_dataset.py - Abstraction of 'LLFF' dataset.
 """
 
 import os
+from typing import Tuple
 
 import torch
 import torch.utils.data as data

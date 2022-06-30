@@ -127,7 +127,22 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True):
     imgs = np.stack(imgs, -1)
 
     print("Loaded image data", imgs.shape, poses[:, -1, 0])
-    return poses, bds, imgs
+
+def imread(img_file: str) -> np.ndarray:
+    """
+    A simple wrapper around imageio.imread.
+
+    Args:
+        img_file (str): A name of the image file to be loaded.
+
+    Returns:
+        An instance of np.ndarray of shape (H, W, C).
+            The array representing the loaded image.
+    """
+    if img_file.endswith("png"):
+        return imageio.imread(img_file, ignoregamma=True)
+    else:
+        return imageio.imread(img_file)
 
 
 def normalize(vec: np.ndarray) -> np.ndarray:

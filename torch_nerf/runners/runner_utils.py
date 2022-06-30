@@ -16,6 +16,7 @@ import torch_nerf.src.renderer.ray_samplers as ray_samplers
 from torch_nerf.src.renderer.volume_renderer import VolumeRenderer
 import torch_nerf.src.signal_encoder.positional_encoder as pe
 from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
+from torch_nerf.src.utils.data.llff_dataset import LLFFDataset
 
 
 def init_cuda(cfg: DictConfig) -> None:
@@ -60,6 +61,11 @@ def init_dataset_and_loader(
             data_type=cfg.data.data_type,
             half_res=cfg.data.half_res,
             white_bg=cfg.data.white_bg,
+        )
+    elif cfg.data.dataset_type == "nerf_llff":
+        dataset = LLFFDataset(
+            cfg.data.data_root,
+            scene_name=cfg.data.scene_name,
         )
     else:
         raise ValueError("Unsupported dataset.")

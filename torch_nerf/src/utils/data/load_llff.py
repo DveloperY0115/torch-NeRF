@@ -142,16 +142,36 @@ def normalize(vec: np.ndarray) -> np.ndarray:
     return normalized
 
 
-def viewmatrix(z, up, pos):
-    vec2 = normalize(z)
-    vec1_avg = up
-    vec0 = normalize(np.cross(vec1_avg, vec2))
-    vec1 = normalize(np.cross(vec2, vec0))
-    m = np.stack([vec0, vec1, vec2, pos], 1)
-    return m
+def build_extrinsic(
+    z_vec: np.ndarray,
+    up_vec: np.ndarray,
+    camera_position: np.ndarray,
+) -> np.ndarray:
+    """
+    Constructs the camera extrinsic matrix given the
+    - z-axis basis
+    - up vector
+    - the coordinate of the camera in the world frame
+
+    Args:
+        z_vec (np.ndarray): An instance of np.ndarray of shape ().
+
+        up_vec (np.ndarray): An instance of np.ndarray of shape ().
+
+        camera_position (np.ndarray): An instance of np.ndarray of shape ().
+
+    Returns:
+        extrinsic (np.ndarray): An instance of np.ndarray of shape ().
+
+    """
+    z_vec = normalize(z_vec)
+    x_vec = normalize(np.cross(up_vec, z_vec))
+    y_vec = normalize(np.cross(z_vec, x_vec))
+    extrinsic = np.stack([x_vec, y_vec, z_vec, camera_position], 1)
+    return extrinsic
 
 
-def point_to_camera(coord_world: np.ndarray, camera_to_world: np.ndarray) -> np.ndarray:
+def world_to_camera(coord_world: np.ndarray, camera_to_world: np.ndarray) -> np.ndarray:
     """
     Computes the camera frame coordinates of 3D points given their coordinates
     in the world frame.
@@ -162,10 +182,10 @@ def point_to_camera(coord_world: np.ndarray, camera_to_world: np.ndarray) -> np.
 
     Returns:
         coord_camera (np.ndarray): An instance of np.ndarray of shape ().
-            
+
     """
     coord_camera = np.matmul(
-        camera_to_world[:3, :3].T,  # inverse of 'camera_to_world'
+        camera_to_world[:3, :3].T,  # orthonormal, inverse of 'camera_to_world'
         (coord_world - camera_to_world[:3, 3])[..., np.newaxis],
     )[..., 0]
 

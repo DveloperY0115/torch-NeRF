@@ -51,15 +51,22 @@ class LLFFDataset(data.Dataset):
             self._camera_params,
             self._z_bounds,
             self._render_poses,
-            self._i_test,
+            self._idx_test,
         ) = load_llff_data(
             self._root_dir,
             # TODO: Accept more parameters
         )
 
-        self._img_height = self._camera_params[0]
-        self._img_width = self._camera_params[1]
-        self._focal_length = self._camera_params[2]
+        # np.ndarray -> torch.Tensor
+        self._imgs = torch.tensor(self._imgs)
+        self._poses = torch.tensor(self._poses)
+        self._camera_params = torch.tensor(self._camera_params)
+        self._z_bounds = torch.tensor(self._z_bounds)
+        self._render_poses = torch.tensor(self._render_poses)
+
+        self._img_height = int(self._camera_params[0])
+        self._img_width = int(self._camera_params[1])
+        self._focal_length = float(self._camera_params[2])
 
         if not self._imgs.shape[0] == self._poses.shape[0]:
             raise AssertionError(
@@ -81,11 +88,13 @@ class LLFFDataset(data.Dataset):
             index (int): Index of the data to be retrieved.
 
         Returns:
-            A tuple of torch.Tensor instances each representing input RGB images
-                and camera extrinsic matrices.
+            img (torch.Tensor): An instance of torch.Tensor of shape (C, H, W).
+                A posed RGB image.
+            pose (torch.Tensor): An instance of torch.Tensor of shape (3, 4).
+                The camera extrinsics associated with 'img'.
         """
-        img = torch.tensor(self._imgs[index])
-        pose = torch.tensor(self._poses[index])
+        img = self._imgs[index]
+        pose = self._poses[index]
 
         return img, pose
 
@@ -108,3 +117,8 @@ class LLFFDataset(data.Dataset):
     def render_poses(self) -> torch.Tensor:
         """Returns the predefined poses to render the scene."""
         return self._render_poses
+
+    @property
+    def z_bounds(self) -> torch.Tensor:
+        """Returns the depth bounds of the images."""
+        return self._z_bounds

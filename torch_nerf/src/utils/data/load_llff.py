@@ -287,30 +287,29 @@ def render_path_spiral(
     focal: float,
     z_rate: float,
     rots: int,
-    N: int,
+    num_keyframe: int,
 ) -> np.ndarray:
     """
     Computes the series of camera poses that consititutes the spiral-like
     trajectory. The poses are used for rendering novel views.
 
     Args:
-        camera_to_world (np.ndarray): An instance of np.ndarray of shape ().
+        camera_to_world (np.ndarray): An instance of np.ndarray of shape (N, 3, 4).
         up_vec (np.ndarray): An instance of np.ndarray of shape ().
         rads (np.ndarray): An instance of np.ndarray of shape ().
         focal (float):
         z_rate (float): The rate of change of displacement along z-axis.
         rots (int): Number of rotations around the spiral axis.
-        N (int): Number of key frame positions.
+        num_keyframe (int): Number of key frame positions.
 
     Returns:
-        render_poses (np.ndarray): An instance of np.ndarray of shape ().
+        render_poses (np.ndarray): An instance of np.ndarray of shape (N, 3, 4).
             The consecutive camera poses constituting the spiral trajectory.
     """
     render_poses = []
     radiuses = np.array(list(radiuses) + [1.0])
-    hwf = camera_to_world[:, 4:5]
 
-    for theta in np.linspace(0.0, 2.0 * np.pi * rots, N + 1)[:-1]:
+    for theta in np.linspace(0.0, 2.0 * np.pi * rots, num_keyframe + 1)[:-1]:
         camera_position = np.dot(
             camera_to_world[:3, :4],
             np.array([np.cos(theta), -np.sin(theta), -np.sin(theta * z_rate), 1.0]) * radiuses,
@@ -318,9 +317,7 @@ def render_path_spiral(
         z_vec = normalize(
             camera_position - np.dot(camera_to_world[:3, :4], np.array([0, 0, -focal, 1.0]))
         )
-        render_poses.append(
-            np.concatenate([build_extrinsic(z_vec, up_vec, camera_position), hwf], 1)
-        )
+        render_poses.append(build_extrinsic(z_vec, up_vec, camera_position))
     return render_poses
 
 

@@ -1,0 +1,5 @@
+dataset_type: nerf_llff
+data_root: data/nerf_llff_data  # TODO: Create a file that stores path to raw data files
+scene_name: fern
+batch_size: 1
+shuffle: true

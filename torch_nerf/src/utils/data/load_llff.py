@@ -126,8 +126,20 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True):
     return poses, bds, imgs
 
 
-def normalize(x):
-    return x / np.linalg.norm(x)
+def normalize(vec: np.ndarray) -> np.ndarray:
+    """
+    Normalizes the given vector.
+
+    Args:
+        vec (np.ndarray): An instance of np.ndarray of shape ().
+
+    Returns:
+        normalized (np.ndarray): An instance of np.ndarray of shape ().
+            The unit vector whose direction is same as the input vector but
+            with its L2 norm 1.
+    """
+    normalized = vec / np.linalg.norm(vec)
+    return normalized
 
 
 def viewmatrix(z, up, pos):
@@ -139,12 +151,26 @@ def viewmatrix(z, up, pos):
     return m
 
 
-def ptstocam(pts, c2w):
-    tt = np.matmul(c2w[:3, :3].T, (pts - c2w[:3, 3])[..., np.newaxis])[..., 0]
-    return tt
+def point_to_camera(coord_world: np.ndarray, camera_to_world: np.ndarray) -> np.ndarray:
+    """
+    Computes the camera frame coordinates of 3D points given their coordinates
+    in the world frame.
 
+    Args:
+        coord_world (np.ndarray): An instance of np.ndarray of shape ().
+        camera_to_world (np.ndarray): An instance of np.ndarray of shape ().
 
-def poses_avg(poses):
+    Returns:
+        coord_camera (np.ndarray): An instance of np.ndarray of shape ().
+            
+    """
+    coord_camera = np.matmul(
+        camera_to_world[:3, :3].T,  # inverse of 'camera_to_world'
+        (coord_world - camera_to_world[:3, 3])[..., np.newaxis],
+    )[..., 0]
+
+    return coord_camera
+
 
     hwf = poses[0, :3, -1:]
 

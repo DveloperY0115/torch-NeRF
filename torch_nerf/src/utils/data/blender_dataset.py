@@ -1,5 +1,5 @@
 """
-blender_dataset.py - Abstraction on Pytorch dataset.
+blender_dataset.py - Abstraction of 'Blender' dataset.
 """
 
 import os
@@ -76,7 +76,7 @@ class NeRFBlenderDataset(data.Dataset):
                 )
             )
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Returns the total number of data in the dataset."""
         return self._imgs.shape[0]
 

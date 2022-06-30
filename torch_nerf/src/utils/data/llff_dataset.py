@@ -23,6 +23,10 @@ class LLFFDataset(data.Dataset):
         self,
         root_dir: str,
         scene_name: str,
+        factor: int,
+        recenter: bool,
+        bd_factor: float,
+        spherify: bool,
     ) -> None:
         """
         Constructor of 'LLFFDataset'.
@@ -30,7 +34,10 @@ class LLFFDataset(data.Dataset):
         Args:
             root_dir (str): A string indicating the root directory of the dataset.
             scene_name (str): A string indicating the name of the Blender scene.
-            data_type (str): A string indicating the type of the dataset.
+            factor (int): A downsample factor for LLFF images.
+            recenter (bool): A flag for recentering camera poses around the "central" pose.
+            bd_factor (float):
+            spherify (bool):
         """
         # check arguments
         scene_names = ["fern", "flower", "fortress", "horns", "leaves", "orchids", "room", "trex"]
@@ -54,7 +61,10 @@ class LLFFDataset(data.Dataset):
             self._idx_test,
         ) = load_llff_data(
             self._root_dir,
-            # TODO: Accept more parameters
+            factor=factor,
+            recenter=recenter,
+            bd_factor=bd_factor,
+            spherify=spherify,
         )
 
         # np.ndarray -> torch.Tensor
@@ -64,9 +74,9 @@ class LLFFDataset(data.Dataset):
         self._z_bounds = torch.tensor(self._z_bounds)
         self._render_poses = torch.tensor(self._render_poses)
 
-        self._img_height = int(self._camera_params[0])
-        self._img_width = int(self._camera_params[1])
-        self._focal_length = float(self._camera_params[2])
+        self._img_height = int(self._camera_params[0, 0])
+        self._img_width = int(self._camera_params[0, 1])
+        self._focal_length = float(self._camera_params[0, 2])
 
         if not self._imgs.shape[0] == self._poses.shape[0]:
             raise AssertionError(

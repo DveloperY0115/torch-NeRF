@@ -285,7 +285,6 @@ def render_path_spiral(
     up_vec: np.ndarray,
     radiuses: np.ndarray,
     focal: float,
-    z_delta: float,
     z_rate: float,
     rots: int,
     N: int,
@@ -299,7 +298,6 @@ def render_path_spiral(
         up_vec (np.ndarray): An instance of np.ndarray of shape ().
         rads (np.ndarray): An instance of np.ndarray of shape ().
         focal (float):
-        z_delta (float):
         z_rate (float): The rate of change of displacement along z-axis.
         rots (int): Number of rotations around the spiral axis.
         N (int): Number of key frame positions.
@@ -482,7 +480,13 @@ def load_llff_data(
 
         # Generate poses for spiral path
         render_poses = render_path_spiral(
-            c2w_path, up, rads, focal, zdelta, zrate=0.5, rots=N_rots, N=N_views
+            c2w_path,
+            up,
+            rads,
+            focal,
+            z_rate=0.5,
+            rots=N_rots,
+            N=N_views,
         )
 
     render_poses = np.array(render_poses).astype(np.float32)

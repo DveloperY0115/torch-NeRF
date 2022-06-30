@@ -192,7 +192,12 @@ def world_to_camera(coord_world: np.ndarray, camera_to_world: np.ndarray) -> np.
 
 def poses_avg(poses: np.ndarray) -> np.ndarray:
     """
-    Computes the average pose of the given dataset.
+    Computes the "central" pose of the given dataset.
+
+    For detailed motivation behind this design decision, please
+    refer to the following issues:
+        (1) https://github.com/bmild/nerf/issues/18
+        (2) https://github.com/bmild/nerf/issues/34
 
     Args:
         poses (np.ndarray): An instance of np.ndarray of shape (*, 3, 5).
@@ -206,10 +211,13 @@ def poses_avg(poses: np.ndarray) -> np.ndarray:
     """
     hwf = poses[0, :3, -1:]
 
-    center = poses[:, :3, 3].mean(0)
-    vec2 = normalize(poses[:, :3, 2].sum(0))
-    up = poses[:, :3, 1].sum(0)
-    avg_camera_to_world = np.concatenate([build_extrinsic(vec2, up, center), hwf], 1)
+    mean_position = poses[:, :3, 3].mean(axis=0)
+    mean_z = normalize(poses[:, :3, 2].sum(axis=0))
+    mean_y = poses[:, :3, 1].sum(axis=0)  # regard mean y-axis as "up" vector
+    avg_camera_to_world = np.concatenate(
+        [build_extrinsic(mean_z, mean_y, mean_position), hwf],
+        axis=1,
+    )
 
     return avg_camera_to_world
 

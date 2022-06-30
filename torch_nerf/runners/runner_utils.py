@@ -66,6 +66,10 @@ def init_dataset_and_loader(
         dataset = LLFFDataset(
             cfg.data.data_root,
             scene_name=cfg.data.scene_name,
+            factor=cfg.data.factor,
+            recenter=cfg.data.recenter,
+            bd_factor=cfg.data.bd_factor,
+            spherify=cfg.data.spherify,
         )
 
         # update the near and far bounds
@@ -77,8 +81,8 @@ def init_dataset_and_loader(
                 f"Set (t_near, t_far) to ({cfg.renderer.t_near}, {cfg.renderer.t_far})."
             )
         else:
-            cfg.renderer.t_near = torch.min(dataset.z_bounds) * 0.9
-            cfg.renderer.t_far = torch.max(dataset.z_bounds) * 1.0
+            cfg.renderer.t_near = float(torch.min(dataset.z_bounds) * 0.9)
+            cfg.renderer.t_far = float(torch.max(dataset.z_bounds) * 1.0)
             print(
                 "Proceeding without NDC projection. "
                 f"Set (t_near, t_far) to ({cfg.renderer.t_near}, {cfg.renderer.t_far})."

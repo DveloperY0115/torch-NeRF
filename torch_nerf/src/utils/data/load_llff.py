@@ -148,10 +148,8 @@ def build_extrinsic(
     camera_position: np.ndarray,
 ) -> np.ndarray:
     """
-    Constructs the camera extrinsic matrix given the
-    - z-axis basis
-    - up vector
-    - the coordinate of the camera in the world frame
+    Constructs the camera extrinsic matrix given the z-axis basis,
+    up vector, and the coordinate of the camera in the world frame.
 
     Args:
         z_vec (np.ndarray): An instance of np.ndarray of shape ().
@@ -192,14 +190,28 @@ def world_to_camera(coord_world: np.ndarray, camera_to_world: np.ndarray) -> np.
     return coord_camera
 
 
+def poses_avg(poses: np.ndarray) -> np.ndarray:
+    """
+    Computes the average pose of the given dataset.
+
+    Args:
+        poses (np.ndarray): An instance of np.ndarray of shape (*, 3, 5).
+            The camera poses associated with the images of a scene.
+            Specifically, the last column of the array holds additional data
+            - height of images, width of images, and focal length of images.
+
+    Returns:
+        avg_camera_to_world (np.ndarray): An instance of np.ndarray of shape (3, 5).
+            The array holding the average camera pose matrix and additional data.
+    """
     hwf = poses[0, :3, -1:]
 
     center = poses[:, :3, 3].mean(0)
     vec2 = normalize(poses[:, :3, 2].sum(0))
     up = poses[:, :3, 1].sum(0)
-    c2w = np.concatenate([viewmatrix(vec2, up, center), hwf], 1)
+    avg_camera_to_world = np.concatenate([build_extrinsic(vec2, up, center), hwf], 1)
 
-    return c2w
+    return avg_camera_to_world
 
 
 def render_path_spiral(c2w, up, rads, focal, zdelta, zrate, rots, N):

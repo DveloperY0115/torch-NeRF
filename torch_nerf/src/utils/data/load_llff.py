@@ -64,69 +64,81 @@ def _minify(basedir, factors=[], resolutions=[]):
         print("Done")
 
 
-def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True):
+def _load_data(
+    base_dir: str,
+    factor=None,
+    img_width: int = None,
+    img_height: int = None,
+) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    """
+    Loads camera parameters, scene bounds, and images.
 
-    poses_arr = np.load(os.path.join(basedir, "poses_bounds.npy"))
-    poses = poses_arr[:, :-2].reshape([-1, 3, 5]).transpose([1, 2, 0])
-    bds = poses_arr[:, -2:].transpose([1, 0])
+    Args:
+        base_dir (str):
+        factor (int):
+        img_width (int):
+        img_height (int):
+
+    Returns:
+        imgs (np.ndarray):
+        poses (np.ndarray):
+        z_bounds (np.ndarray):
+    """
+    # load the camera parameters and scene z-bounds
+    poses_raw = np.load(os.path.join(base_dir, "poses_bounds.npy"))
+    poses = poses_raw[:, :-2].reshape([-1, 3, 5]).transpose([1, 2, 0])  # (N, 15) -> (3, 5, N)
+    z_bounds = poses_raw[:, -2:].transpose([1, 0])  # (N, 2) -> (2, N)
 
     img0 = [
-        os.path.join(basedir, "images", f)
-        for f in sorted(os.listdir(os.path.join(basedir, "images")))
+        os.path.join(base_dir, "images", f)
+        for f in sorted(os.listdir(os.path.join(base_dir, "images")))
         if f.endswith("JPG") or f.endswith("jpg") or f.endswith("png")
     ][0]
-    sh = imageio.imread(img0).shape
+    img_shape = imageio.imread(img0).shape
 
-    sfx = ""
+    suffix = ""
 
+    # resize the images if requested
     if factor is not None:
-        sfx = "_{}".format(factor)
-        _minify(basedir, factors=[factor])
+        suffix = f"_{factor}"
+        _minify(base_dir, factors=[factor])
         factor = factor
-    elif height is not None:
-        factor = sh[0] / float(height)
-        width = int(sh[1] / factor)
-        _minify(basedir, resolutions=[[height, width]])
-        sfx = "_{}x{}".format(width, height)
-    elif width is not None:
-        factor = sh[1] / float(width)
-        height = int(sh[0] / factor)
-        _minify(basedir, resolutions=[[height, width]])
-        sfx = "_{}x{}".format(width, height)
+    elif img_height is not None:
+        factor = img_shape[0] / float(img_height)
+        img_width = int(img_shape[1] / factor)
+        _minify(base_dir, resolutions=[[img_height, img_width]])
+        suffix = f"_{img_width}x{img_height}"
+    elif img_width is not None:
+        factor = img_shape[1] / float(img_width)
+        img_height = int(img_shape[0] / factor)
+        _minify(base_dir, resolutions=[[img_height, img_width]])
+        suffix = f"_{img_width}x{img_height}"
     else:
         factor = 1
 
-    imgdir = os.path.join(basedir, "images" + sfx)
-    if not os.path.exists(imgdir):
-        print(imgdir, "does not exist, returning")
-        return
+    img_dir = os.path.join(base_dir, "images" + suffix)
+    if not os.path.exists(img_dir):
+        raise ValueError(f"The base directory of dataset {img_dir} does not exist.")
 
-    imgfiles = [
-        os.path.join(imgdir, f)
-        for f in sorted(os.listdir(imgdir))
+    # identify file to be read
+    img_files = [
+        os.path.join(img_dir, f)
+        for f in sorted(os.listdir(img_dir))
         if f.endswith("JPG") or f.endswith("jpg") or f.endswith("png")
     ]
-    if poses.shape[-1] != len(imgfiles):
-        print("Mismatch between imgs {} and poses {} !!!!".format(len(imgfiles), poses.shape[-1]))
-        return
+    if poses.shape[-1] != len(img_files):
+        raise ValueError(f"Mismatch between imgs {len(img_files)} and poses {poses.shape[-1]}.")
 
-    sh = imageio.imread(imgfiles[0]).shape
-    poses[:2, 4, :] = np.array(sh[:2]).reshape([2, 1])
+    img_shape = imageio.imread(img_files[0]).shape
+    poses[:2, 4, :] = np.array(img_shape[:2]).reshape([2, 1])
     poses[2, 4, :] = poses[2, 4, :] * 1.0 / factor
 
-    if not load_imgs:
-        return poses, bds
+    imgs = [imread(file)[..., :3] / 255.0 for file in img_files]
+    imgs = np.stack(imgs, axis=-1)
 
-    def imread(f):
-        if f.endswith("png"):
-            return imageio.imread(f, ignoregamma=True)
-        else:
-            return imageio.imread(f)
+    print("Loaded camera poses, scene bounds, and image data.")
+    return imgs, poses, z_bounds
 
-    imgs = imgs = [imread(f)[..., :3] / 255.0 for f in imgfiles]
-    imgs = np.stack(imgs, -1)
-
-    print("Loaded image data", imgs.shape, poses[:, -1, 0])
 
 def imread(img_file: str) -> np.ndarray:
     """

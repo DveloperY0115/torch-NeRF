@@ -49,7 +49,7 @@ The rendering script stores rendered images in `render_out` directory under the 
   <img src="./media/lego.gif" width="150" />
   <img src="./media/ship.gif" width="150" />
   <img src="./media/materials.gif" width="150" />
-  <img src="./media/hotdog.gif" width="150" / >
+  <img src="./media/hotdog.gif" width="150" />
 </p>
 
 ## Documentation

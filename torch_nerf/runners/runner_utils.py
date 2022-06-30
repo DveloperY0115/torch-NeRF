@@ -67,6 +67,24 @@ def init_dataset_and_loader(
             cfg.data.data_root,
             scene_name=cfg.data.scene_name,
         )
+
+        # update the near and far bounds
+        if cfg.renderer.project_to_ndc:
+            cfg.renderer.t_near = 0.0
+            cfg.renderer.t_far = 1.0
+            print(
+                "Using NDC projection for LLFF scene. "
+                f"Set (t_near, t_far) to ({cfg.renderer.t_near}, {cfg.renderer.t_far})."
+            )
+        else:
+            cfg.renderer.t_near = torch.min(dataset.z_bounds) * 0.9
+            cfg.renderer.t_far = torch.max(dataset.z_bounds) * 1.0
+            print(
+                "Proceeding without NDC projection. "
+                f"Set (t_near, t_far) to ({cfg.renderer.t_near}, {cfg.renderer.t_far})."
+            )
+    elif cfg.data.dataset_type == "nerf_deepvoxels":
+        raise NotImplementedError()
     else:
         raise ValueError("Unsupported dataset.")
 

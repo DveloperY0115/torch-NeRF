@@ -3,8 +3,12 @@ Slightly modified version of LLFF data loading code
 see https://github.com/Fyusion/LLFF for original
 """
 
+import os
+
+import imageio
 import numpy as np
-import os, imageio
+from shutil import copy
+from subprocess import check_output
 
 
 def _minify(basedir, factors=[], resolutions=[]):
@@ -20,10 +24,7 @@ def _minify(basedir, factors=[], resolutions=[]):
     if not needtoload:
         return
 
-    from shutil import copy
-    from subprocess import check_output
-
-    imgdir = os.path.join(basedir, "images")
+    imgdir = os.path.join(base_dir, "images")
     imgs = [os.path.join(imgdir, f) for f in sorted(os.listdir(imgdir))]
     imgs = [f for f in imgs if any([f.endswith(ex) for ex in ["JPG", "jpg", "png", "jpeg", "PNG"]])]
     imgdir_orig = imgdir

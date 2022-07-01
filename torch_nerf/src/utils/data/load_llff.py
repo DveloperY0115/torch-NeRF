@@ -321,10 +321,11 @@ def render_path_spiral(
     trajectory. The poses are used for rendering novel views.
 
     Args:
-        camera_to_world (np.ndarray): An instance of np.ndarray of shape (N, 3, 4).
-        up_vec (np.ndarray): An instance of np.ndarray of shape ().
-        rads (np.ndarray): An instance of np.ndarray of shape ().
-        focal (float):
+        camera_to_world (np.ndarray): An instance of np.ndarray of shape (3, 4).
+        up_vec (np.ndarray): An instance of np.ndarray of shape (3,).
+        radiuses (np.ndarray): An instance of np.ndarray of shape (3,).
+            The extents along each dimension of the trajectory.
+        focal (float): The focal length of the camera.
         z_rate (float): The rate of change of displacement along z-axis.
         rots (int): Number of rotations around the spiral axis.
         num_keyframe (int): Number of key frame positions.
@@ -345,6 +346,7 @@ def render_path_spiral(
             camera_position - np.dot(camera_to_world[:3, :4], np.array([0, 0, -focal, 1.0]))
         )
         render_poses.append(build_extrinsic(z_vec, up_vec, camera_position))
+
     return render_poses
 
 
@@ -353,11 +355,13 @@ def recenter_poses(poses: np.ndarray) -> np.ndarray:
     Recenter poses with respect to their "central" pose.
 
     Args:
-        poses (np.ndarray): An instance of np.ndarray of shape (N, 3, 4).
-            Camera extrinsic matrices represented in the form of Affine matrices.
+        poses (np.ndarray): An instance of np.ndarray of shape (N, 3, 4),
+            where N is the number of images in the dataset. Camera extrinsic matrices
+            represented in the form of Affine matrices.
     Returns:
-        poses (np.ndarray): An instance of np.ndarray of shape (N, 3, 4).
-            The camera poses adjusted according to their statistics (i.e., the central pose).
+        poses (np.ndarray): An instance of np.ndarray of shape (N, 3, 4),
+            where N is the number of images in the dataset. The camera poses adjusted according
+            to their statistics (i.e., the central pose).
     """
     poses_ = poses + 0
     bottom = np.reshape([0, 0, 0, 1.0], [1, 4])
@@ -461,30 +465,39 @@ def load_llff_data(
     bd_factor: float = 0.75,
     spherify: bool = False,
     path_zflat: bool = False,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, int]:
     """
     Loads LLFF dataset given the base directory.
 
     Args:
-        base_dir (str):
-        factor (int):
-        recenter (bool):
-        bd_factor (float):
-        spherify (bool):
-        path_zflat (bool):
+        base_dir (str): A string indicating the base directory to the dataset being loaded.
+        factor (int): The resizing factor for images. The images in the dataset are
+            resized accordingly when loaded. Set to 8 by default.
+        recenter (bool): A flag for determining whether to recenter the camera poses.
+            Set to True by default.
+        bd_factor (float): The resizing factor for scene depth bounds. The minimum and maximum
+            depth bounds (i.e., z-bounds) are resized accordingly. Set to 0.75 by default.
+        spherify (bool): A flag for determining whether to spherify the camera poses.
+            Set to False by default.
+        path_zflat (bool): A flag for making rendering trajectory that spans xy-plane only.
+            Set to False by default.
 
     Returns:
-        imgs (np.ndarray): An instance of np.ndarray of shape ().
-
-        extrinsics (np.ndarray): An instance of np.ndarray of shape ().
-
-        intrinsics (np.ndarray): An instance of np.ndarray of shape ().
-
-        z_bounds (np.ndarray): An instance of np.ndarray of shape ().
-
-        render_poses (np.ndarray): An instance of np.ndarray of shape ().
-
-        i_test (np.ndarray): An instance of np.ndarray of shape ().
+        imgs (np.ndarray): An instance of np.ndarray of shape (N, img_height, img_width, 3),
+            where N is the number of images in the dataset. The array of RGB images.
+        extrinsics (np.ndarray): An instance of np.ndarray of shape (N, 3, 4),
+            where N is the number of images in the dataset. The array of Affine
+            transform matrices representing camera poses.
+        intrinsics (np.ndarray): An instance of np.ndarray of shape (N, 3),
+            where N is the number of images in the dataset. The array of
+            camera intrinsic parameters. Each column holds (image height, image width,
+            focal length).
+        z_bounds (np.ndarray): An instance of np.ndarray of shape (N, 2),
+            where N is the number of images in the dataset. The array of depth bounds
+            of scenes.
+        render_poses (np.ndarray): An instance of np.ndarray of shape (N, 3, 4).
+            The consecutive camera poses constituting the spiral trajectory.
+        i_test (int): An instance of np.ndarray of shape ().
 
     """
     imgs, extrinsics, intrinsics, z_bounds = _load_data(
@@ -530,7 +543,7 @@ def load_llff_data(
             camera_to_world_path[:3, 3] = (
                 camera_to_world_path[:3, 3] + zloc * camera_to_world_path[:3, 2]
             )
-            rads[2] = 0.0
+            rads[2] = 0.0  # the radius of z-directional perturbation is zero
             num_rotations = 1
             num_keyframes /= 2
 
@@ -551,7 +564,7 @@ def load_llff_data(
     print(f"Data: {imgs.shape}, {extrinsics.shape}, {intrinsics.shape}, {z_bounds.shape}")
 
     dists = np.sum(np.square(avg_camera_to_world[:3, 3] - extrinsics[:, :3, 3]), -1)
-    i_test = np.argmin(dists)
+    i_test = int(np.argmin(dists))
     print("HOLDOUT view is", i_test)
 
     imgs = imgs.astype(np.float32)

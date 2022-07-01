@@ -7,12 +7,11 @@ in terms of naming conventions, documentations, etc.
 """
 
 import os
-from typing import List, Optional, Tuple
+from subprocess import check_output
+from typing import Optional, Tuple
 
 import imageio
 import numpy as np
-from shutil import copy
-from subprocess import check_output
 
 
 def _minify(basedir, factors=[], resolutions=[]):

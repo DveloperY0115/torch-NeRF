@@ -14,51 +14,72 @@ import imageio
 import numpy as np
 
 
-def _minify(basedir, factors=[], resolutions=[]):
-    needtoload = False
-    for r in factors:
-        imgdir = os.path.join(basedir, "images_{}".format(r))
-        if not os.path.exists(imgdir):
-            needtoload = True
-    for r in resolutions:
-        imgdir = os.path.join(basedir, "images_{}x{}".format(r[1], r[0]))
-        if not os.path.exists(imgdir):
-            needtoload = True
-    if not needtoload:
+def _minify(
+    base_dir: str,
+    factors: Tuple[float, ...] = [],
+    resolutions: Tuple[Tuple[int, int], ...] = [],
+) -> None:
+    """
+    Resizes the images in the directory according to the given (1) resizing factor, or (2) target resolution.
+
+    Args:
+        base_dir (str): A string indicating the directory containing images being resized.
+        factors (Tuple[float, ...]): A tuple of floating point numbers indicating the resizing factor(s).
+            Set to None by default.
+        resolutions (Tuple[Tuple[int, int], ...]): A tuple of 2-tuples representing the target resolution(s).
+            Set to None by default.
+    """
+    need_to_load = False  # TODO: Need to LOAD? is this naming appropriate?
+
+    if not factors is None:
+        for factor in factors:
+            img_dir = os.path.join(base_dir, f"images_{factor}")
+            if not os.path.exists(img_dir):
+                need_to_load = True
+    if not resolutions is None:
+        for resolution in resolutions:
+            img_dir = os.path.join(base_dir, f"images_{resolution[1]}x{resolution[0]}")
+            if not os.path.exists(img_dir):
+                need_to_load = True
+
+    if not need_to_load:  # return if there is no need to resize images
         return
 
-    imgdir = os.path.join(base_dir, "images")
-    imgs = [os.path.join(imgdir, f) for f in sorted(os.listdir(imgdir))]
+    img_dir = os.path.join(base_dir, "images")
+    imgs = [os.path.join(img_dir, f) for f in sorted(os.listdir(img_dir))]
     imgs = [f for f in imgs if any([f.endswith(ex) for ex in ["JPG", "jpg", "png", "jpeg", "PNG"]])]
-    imgdir_orig = imgdir
+    img_dir_orig = img_dir
 
-    wd = os.getcwd()
+    cwd = os.getcwd()
 
     for r in factors + resolutions:
-        if isinstance(r, int):
-            name = "images_{}".format(r)
-            resizearg = "{}%".format(100.0 / r)
-        else:
-            name = "images_{}x{}".format(r[1], r[0])
-            resizearg = "{}x{}".format(r[1], r[0])
-        imgdir = os.path.join(basedir, name)
-        if os.path.exists(imgdir):
+        if isinstance(r, int):  # if it's a single integer resizing factor
+            name = f"images_{r}"
+            resizearg = f"{100.0 / r}%"
+        else:  # if it's a 2-tuple target resolution
+            name = f"images_{r[1]}x{r[0]}"
+            resizearg = f"{r[1]}x{r[0]}"
+        img_dir = os.path.join(base_dir, name)
+
+        if os.path.exists(img_dir):  # processed images already exist
             continue
 
-        print("Minifying", r, basedir)
+        print("Minifying", r, base_dir)
 
-        os.makedirs(imgdir)
-        check_output("cp {}/* {}".format(imgdir_orig, imgdir), shell=True)
+        os.makedirs(img_dir)
+        check_output(f"cp {img_dir_orig}/* {img_dir}", shell=True)
 
+        # run ImageMagick command to resize images
+        # The documentation can be found here: https://imagemagick.org/script/mogrify.php
         ext = imgs[0].split(".")[-1]
-        args = " ".join(["mogrify", "-resize", resizearg, "-format", "png", "*.{}".format(ext)])
+        args = " ".join(["mogrify", "-resize", resizearg, "-format", "png", f"*.{ext}"])
         print(args)
-        os.chdir(imgdir)
+        os.chdir(img_dir)
         check_output(args, shell=True)
-        os.chdir(wd)
+        os.chdir(cwd)
 
         if ext != "png":
-            check_output("rm {}/*.{}".format(imgdir, ext), shell=True)
+            check_output(f"rm {img_dir}/*.{ext}", shell=True)
             print("Removed duplicates")
         print("Done")
 
@@ -347,8 +368,19 @@ def recenter_poses(poses: np.ndarray) -> np.ndarray:
 #####################
 
 
-def spherify_poses(poses, bds):
+def spherify_poses(
+    poses: np.ndarray,
+    bds: np.ndarray,
+):
+    """
 
+    Args:
+        poses (np.ndarray):
+        bds (np.ndarray):
+
+    Returns:
+
+    """
     p34_to_44 = lambda p: np.concatenate(
         [p, np.tile(np.reshape(np.eye(4)[-1, :], [1, 1, 4]), [p.shape[0], 1, 1])], 1
     )
@@ -460,6 +492,7 @@ def load_llff_data(
 
     if recenter:
         extrinsics = recenter_poses(extrinsics)
+
     if spherify:
         extrinsics, render_poses, z_bounds = spherify_poses(extrinsics, z_bounds)
     else:
@@ -483,6 +516,7 @@ def load_llff_data(
         camera_to_world_path = avg_camera_to_world
         num_keyframes = 120
         num_rotations = 2
+
         if path_zflat:
             # zloc = np.percentile(tt, 10, 0)[2]
             zloc = -close_depth * 0.1

@@ -229,8 +229,8 @@ class RaySamplerBase(object):
             projected_dir (torch.Tensor): Tensor of shape (N, 3).
                 Ray direction vectors in NDC.
         """
-        if z_near <= 0:
-            raise ValueError(f"Expected a positive real number. Got {z_near}.")
+        if z_near < 0:
+            raise ValueError(f"Expected a real number greater than or equal to 0. Got {z_near}.")
 
         # project the ray origin
         origin_x = -(2 * focal_length / img_width) * (ray_origin[:, 0] / ray_origin[:, 2])

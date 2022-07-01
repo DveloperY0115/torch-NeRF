@@ -215,12 +215,12 @@ def normalize(vec: np.ndarray) -> np.ndarray:
     Normalizes the given vector.
 
     Args:
-        vec (np.ndarray): An instance of np.ndarray of shape ().
+        vec (np.ndarray): An instance of np.ndarray of shape (3,). A 3D vector.
 
     Returns:
-        normalized (np.ndarray): An instance of np.ndarray of shape ().
-            The unit vector whose direction is same as the input vector but
-            with its L2 norm 1.
+        normalized (np.ndarray): An instance of np.ndarray of shape (3,).
+            The unit 3D vector whose direction is same as the input vector but
+            L2 norm is 1.0.
     """
     normalized = vec / np.linalg.norm(vec)
     return normalized
@@ -236,15 +236,19 @@ def build_extrinsic(
     up vector, and the coordinate of the camera in the world frame.
 
     Args:
-        z_vec (np.ndarray): An instance of np.ndarray of shape ().
-
-        up_vec (np.ndarray): An instance of np.ndarray of shape ().
-
-        camera_position (np.ndarray): An instance of np.ndarray of shape ().
-
+        z_vec (np.ndarray): An instance of np.ndarray of shape (3,).
+            A 3D vector representing the z-axis of the camera frame in the
+            world frame.
+        up_vec (np.ndarray): An instance of np.ndarray of shape (3,).
+            A 3D vector representing the up vector of the camera frame in the
+            world frame.
+        camera_position (np.ndarray): An instance of np.ndarray of shape (3,).
+            A 3D coordinate representing the position of the camera in the
+            world frame.
     Returns:
-        extrinsic (np.ndarray): An instance of np.ndarray of shape ().
-
+        extrinsic (np.ndarray): An instance of np.ndarray of shape (3, 4).
+            The camera extrinsic matrix represented as Affine transform computed
+            from the inputs.
     """
     z_vec = normalize(z_vec)
     x_vec = normalize(np.cross(up_vec, z_vec))

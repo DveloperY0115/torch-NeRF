@@ -16,8 +16,8 @@ import numpy as np
 
 def _minify(
     base_dir: str,
-    factors: Tuple[float, ...] = [],
-    resolutions: Tuple[Tuple[int, int], ...] = [],
+    factors: Tuple[float, ...] = None,
+    resolutions: Tuple[Tuple[int, int], ...] = None,
 ) -> None:
     """
     Resizes the images in the directory according to the given (1) resizing factor, or (2) target resolution.

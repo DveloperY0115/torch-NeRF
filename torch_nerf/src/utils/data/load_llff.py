@@ -20,14 +20,15 @@ def _minify(
     resolutions: Tuple[Tuple[int, int], ...] = None,
 ) -> None:
     """
-    Resizes the images in the directory according to the given (1) resizing factor, or (2) target resolution.
+    Resizes the images in the directory according to the given
+    (1) resizing factor, or (2) target resolution.
 
     Args:
         base_dir (str): A string indicating the directory containing images being resized.
-        factors (Tuple[float, ...]): A tuple of floating point numbers indicating the resizing factor(s).
-            Set to None by default.
-        resolutions (Tuple[Tuple[int, int], ...]): A tuple of 2-tuples representing the target resolution(s).
-            Set to None by default.
+        factors (Tuple[float, ...]): A tuple of floating point numbers
+            indicating the resizing factor(s). Set to None by default.
+        resolutions (Tuple[Tuple[int, int], ...]): A tuple of 2-tuples
+            representing the target resolution(s). Set to None by default.
     """
     need_to_load = False  # TODO: Need to LOAD? is this naming appropriate?
 
@@ -86,7 +87,7 @@ def _minify(
 
 def _load_data(
     base_dir: str,
-    factor: Optional[int] = None,
+    factor: Optional[float] = None,
     img_width: Optional[int] = None,
     img_height: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -95,21 +96,23 @@ def _load_data(
 
     Args:
         base_dir (str): A string indicating the base directory of the dataset.
-        factor (int):
-        img_width (int): The desired width of the output images.
-            Set to None by default.
-        img_height (int): The desired height of the output images.
-            Set to None by default.
+        factor (int): A floating point number representing the resizing factor of images.
+        img_width (int): The desired width of the output images. Set to None by default.
+        img_height (int): The desired height of the output images. Set to None by default.
 
     Returns:
-        imgs (np.ndarray): An instance of np.ndarray of shape ().
-
-        extrinsics (np.ndarray): An instance of np.ndarray of shape ().
-
-        intrinsics (np.ndarray): An instance of np.ndarray of shape ().
-
-        z_bounds (np.ndarray): An instance of np.ndarray of shape ().
-
+        imgs (np.ndarray): An instance of np.ndarray of shape (N, img_height, img_width, 3),
+            where N is the number of images in the dataset. The array of RGB images.
+        extrinsics (np.ndarray): An instance of np.ndarray of shape (N, 3, 4),
+            where N is the number of images in the dataset. The array of Affine
+            transform matrices representing camera poses.
+        intrinsics (np.ndarray): An instance of np.ndarray of shape (N, 3),
+            where N is the number of images in the dataset. The array of
+            camera intrinsic parameters. Each column holds (image height, image width,
+            focal length).
+        z_bounds (np.ndarray): An instance of np.ndarray of shape (N, 2),
+            where N is the number of images in the dataset. The array of depth bounds
+            of scenes.
     """
     # load the camera parameters and scene z-bounds
     poses_raw = np.load(os.path.join(base_dir, "poses_bounds.npy"))

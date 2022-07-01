@@ -21,6 +21,7 @@ def main():
         format="FFMPEG",
         mode="I",
         fps=24,
+        macro_block_size=1,
     )
 
     for img in imgs:

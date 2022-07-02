@@ -14,15 +14,15 @@ To configure the Python virtual environment and install dependencies, open the s
 
 ```
 # Clone the repository
-$ git clone https://github.com/DveloperY0115/torch-NeRF.git
-$ cd torch-NeRF
+git clone https://github.com/DveloperY0115/torch-NeRF.git
+cd torch-NeRF
 
 # Create virtual environment
-$ virtualenv venv -p=3.8
-$ source venv/bin/activate
+virtualenv venv -p=3.8
+source venv/bin/activate
 
 # Install dependencies
-$ pip3 install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 You may use any tools of your preference such as `conda`. Our codes should reproduce the results regardless of which dependency management tool is used as long as the same versions of dependencies are installed.

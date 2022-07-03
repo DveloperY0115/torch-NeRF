@@ -67,5 +67,6 @@ The rendering script stores rendered images in `render_out` directory under the 
   - [SNeRG (ICCV 2021)](https://phog.github.io/snerg/)
   - [KiloNeRF (ICCV 2021)](https://arxiv.org/abs/2103.13744)
   - **[Instant-NGP (SIGGRAPH 2022)](https://nvlabs.github.io/instant-ngp/)**
+  - **[Variable Bitrate Neural Fields (SIGGRAPH 2022)](https://nv-tlabs.github.io/vqad/)**
   - [Point-NeRF (CVPR 2022)](https://xharlie.github.io/projects/project_sites/pointnerf/index.html)
   - [TensoRF (arXiv 2022)](https://arxiv.org/abs/2203.09517)

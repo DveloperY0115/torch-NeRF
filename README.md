@@ -14,15 +14,15 @@ To configure the Python virtual environment and install dependencies, open the s
 
 ```
 # Clone the repository
-$ git clone https://github.com/DveloperY0115/torch-NeRF.git
-$ cd torch-NeRF
+git clone https://github.com/DveloperY0115/torch-NeRF.git
+cd torch-NeRF
 
 # Create virtual environment
-$ virtualenv venv -p=3.8
-$ source venv/bin/activate
+virtualenv venv -p=3.8
+source venv/bin/activate
 
 # Install dependencies
-$ pip3 install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 You may use any tools of your preference such as `conda`. Our codes should reproduce the results regardless of which dependency management tool is used as long as the same versions of dependencies are installed.
@@ -30,7 +30,7 @@ You may use any tools of your preference such as `conda`. Our codes should repro
 To download the synthetic dataset for training, issue the following command in the shell:
 
 ```
-$ sh scripts/data/download_example_data.sh
+sh scripts/data/download_example_data.sh
 ```
 
 This should create `data` directory under the project root (`torch-NeRF` by default) and download datasets provided by the authors of NeRF (ECCV 2020).
@@ -38,21 +38,35 @@ This should create `data` directory under the project root (`torch-NeRF` by defa
 The configuration is set for `lego` scene included in `Blender` dataset. Executing the following command will initiate training:
 
 ```
-$ python torch_nerf/runners/run_train.py
+python torch_nerf/runners/run_train.py
 ```
 
 Once a scene representation is trained, it can be rendered using the script `run_render.py` under `torch_nerf/runners` directory. Note that you need to specify the path to the checkpoint file by modifying the file under `config/train_params`.
 
-The rendering script stores rendered images in `render_out` directory under the project root. To create a video from the collection of consecutive frames, use the script `scripts/utils/create_video.py`. The results obtained from various synthetic scenes are shown below.
+The rendering script stores rendered images in `render_out` directory under the project root. To create a video from the collection of consecutive frames, use the script `scripts/utils/create_video.py`.
 
+## Gallery
+
+**NOTE: All images shown below are reproducible using our codes.**
 <p align="middle">
-  <img src="./media/lego.gif" width="150" />
-  <img src="./media/ship.gif" width="150" />
-  <img src="./media/materials.gif" width="150" />
-  <img src="./media/hotdog.gif" width="150" />
+  <img src="./media/nerf_blender/lego.gif" width="150" />
+  <img src="./media/nerf_blender/ship.gif" width="150" />
+  <img src="./media/nerf_blender/materials.gif" width="150" />
+  <img src="./media/nerf_blender/hotdog.gif" width="150" />
 </p>
 
-## Documentation
+<p align="middle">
+  <img src="./media/nerf_llff/fern.gif" width="150" />
+  <img src="./media/nerf_llff/trex.gif" width="150" />
+  <img src="./media/nerf_llff/horns.gif" width="150" />
+  <img src="./media/nerf_llff/room.gif" width="150" />
+</p>
+
+<p align="middle">
+  <img src="./media/nerf_llff/flower.gif" width="150" />
+  <img src="./media/nerf_llff/fortress.gif" width="150" />
+  <img src="./media/nerf_llff/orchids.gif" width="150" />
+</p>
 
 ## Progress
 

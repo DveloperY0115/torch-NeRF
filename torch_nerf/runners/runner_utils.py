@@ -169,7 +169,7 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
             cfg.signal_encoder.include_input,
         )
 
-        coarse_network = network.NeRFMLP(
+        coarse_network = network.NeRF(
             coord_enc.out_dim,
             dir_enc.out_dim,
         ).to(cfg.cuda.device_id)
@@ -186,7 +186,7 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
         # initialize 'fine' scene
         # =========================================================
         if cfg.renderer.num_samples_fine > 0:
-            fine_network = network.NeRFMLP(
+            fine_network = network.NeRF(
                 coord_enc.out_dim,
                 dir_enc.out_dim,
             ).to(cfg.cuda.device_id)

@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 
 
-class NeRFMLP(nn.Module):
+class NeRF(nn.Module):
     """
     A multi-layer perceptron (MLP) used for learning neural radiance fields.
 

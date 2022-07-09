@@ -23,7 +23,7 @@ class PrimitiveCube(PrimitiveBase):
         encoders: Optional[Dict[str, SignalEncoderBase]] = None,
     ):
         """
-        Constructor for QSCube.
+        Constructor for 'PrimitiveCube'.
 
         Args:
             radiance_field (torch.nn.Module): A network representing the scene.

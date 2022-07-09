@@ -69,6 +69,7 @@ class InstantNGPMLP(nn.Module):
         in_dim: int,
         out_dim: int,
         feat_dim: int,
+        num_hidden_layer: int = 2,
     ) -> None:
         """
         Constructor of class 'InstantNGPMLP'.
@@ -77,17 +78,21 @@ class InstantNGPMLP(nn.Module):
             in_dim (int): Dimensionality of input features.
             out_dim (int): Dimensionality of output features.
             feat_dim (int): Dimensionality of hidden layer features.
+            num_hidden_layer (int): Number of hidden layers involved in the forward propagation.
+                Set to 2 by default.
         """
         super().__init__()
 
         self._in_dim = in_dim
         self._out_dim = out_dim
         self._feat_dim = feat_dim
+        self._num_hidden_layer = num_hidden_layer
 
         # fully-connected layers
         self.fc_in = nn.Linear(self._in_dim, self._feat_dim)
-        self.fc_1 = nn.Linear(self._feat_dim, self._feat_dim)
-        self.fc_2 = nn.Linear(self._feat_dim, self._feat_dim)
+        self.fc_hidden = nn.ModuleList(
+            [nn.Linear(self._feat_dim, self._feat_dim) for _ in range(self._num_hidden_layer)]
+        )
         self.fc_out = nn.Linear(self._feat_dim, self._out_dim)
 
         # activation layer
@@ -112,8 +117,10 @@ class InstantNGPMLP(nn.Module):
             raise ValueError(f"Expected {self.in_dim}-D position vector. Got {x.shape[-1]}.")
 
         out = self.relu_actvn(self.fc_in(x))
-        out = self.relu_actvn(self.fc_1(out))
-        out = self.relu_actvn(self.fc_2(out))
+
+        for hidden_layer in self.fc_hidden:
+            out = self.relu_actvn(hidden_layer(out))
+
         out = self.fc_out(out)
 
         return out
@@ -132,3 +139,8 @@ class InstantNGPMLP(nn.Module):
     def feat_dim(self) -> int:
         """Returns the acceptable dimensionality of hidden layer feature vectors."""
         return self._feat_dim
+
+    @property
+    def num_hidden_layer(self) -> int:
+        """Returns the number of hidden layers included in the MLP."""
+        return self._num_hidden_layer

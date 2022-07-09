@@ -46,6 +46,24 @@ class InstantNGPNeRF(nn.Module):
 
 
 class InstantNGPMLP(nn.Module):
+    """
+    A multi-layer perceptron (MLP) used for learning neural radiance fields.
+
+    This class implements the shallow, light-weight MLP used in the paper
+    'Instant Neural Graphics Primitives with a Multiresolution Hash Encoding
+    (SIGGRAPH 2022, Best Paper)'.
+
+    All the neural primitives presented in the paper, such as gigapixel images
+    and signed distance functions (SDFs), are parameterized by this MLP except for NeRF
+    using the cascade of two MLPs. For architecture details, please refer to the Section 4
+    of the paper.
+
+    Attributes:
+        in_dim (int): Dimensionality of input features.
+        out_dim (int): Dimensionality of output features.
+        feat_dim (int): Dimensionality of hidden layer features.
+    """
+
     def __init__(
         self,
         in_dim: int,
@@ -55,17 +73,10 @@ class InstantNGPMLP(nn.Module):
         """
         Constructor of class 'InstantNGPMLP'.
 
-        This class implements the shallow, light-weight MLP used in the paper
-        "Instant Neural Graphics Primitives with a Multiresolution Hash Encoding
-        (SIGGRAPH 2022, Best Paper)". All the neural primitives, such as gigapixel images
-        and signed distance functions (SDFs), are parameterized by this MLP except for NeRF
-        using the cascade of two MLPs. For architecture details, please refer to the Section 4
-        of the paper.
-
         Args:
-            in_dim (int): The dimensionality of input features.
-            out_dim (int): The dimensionality of output features.
-            feat_dim (int): The dimensionality of hidden layer features.
+            in_dim (int): Dimensionality of input features.
+            out_dim (int): Dimensionality of output features.
+            feat_dim (int): Dimensionality of hidden layer features.
         """
         super().__init__()
 

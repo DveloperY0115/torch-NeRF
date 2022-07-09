@@ -17,12 +17,15 @@ class PrimitiveBase(object):
         self,
         encoders: Optional[Dict[str, SignalEncoderBase]] = None,
     ):
-        if not isinstance(encoders, dict):
-            raise ValueError(f"Expected a parameter of type Dict. Got {type(encoders)}")
-        if not "coord_enc" in encoders.keys():
-            raise ValueError(f"Missing required encoder type 'coord_enc'. Got {encoders.keys()}.")
-        if not "dir_enc" in encoders.keys():
-            raise ValueError(f"Missing required encoder type 'dir_enc'. Got {encoders.keys()}.")
+        if not encoders is None:
+            if not isinstance(encoders, dict):
+                raise ValueError(f"Expected a parameter of type Dict. Got {type(encoders)}")
+            if not "coord_enc" in encoders.keys():
+                raise ValueError(
+                    f"Missing required encoder type 'coord_enc'. Got {encoders.keys()}."
+                )
+            if not "dir_enc" in encoders.keys():
+                raise ValueError(f"Missing required encoder type 'dir_enc'. Got {encoders.keys()}.")
         self._encoders = encoders
 
     def query_points(

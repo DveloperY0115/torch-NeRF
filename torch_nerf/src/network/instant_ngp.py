@@ -9,8 +9,75 @@ import torch.nn as nn
 
 
 class InstantNGPNeRF(nn.Module):
-    def __init__(self) -> None:
+    """
+    A neural network that approximates neural radiance fields.
+
+    This class implements the NeRF model described in the paper
+    'Instant Neural Graphics Primitives with a Multiresolution Hash Encoding
+    (SIGGRAPH 2022, Best Paper)'. For architecture details, please refer to the
+    Section 5.4 of the paper.
+
+    Attributes:
+        pos_dim (int): Dimensionality of coordinate vectors of sample points.
+        view_dir_dim (int): Dimensionality of view direction vectors.
+        density_feat_dim (int): Dimensionality of feature vector within density network.
+        color_feat_dim (int): Dimensionality of feature vector within color network.
+        is_hdr (int): A flag for switching output activation of the color MLP.
+    """
+
+    def __init__(
+        self,
+        pos_dim: int,
+        view_dir_dim: int,
+        density_feat_dim: int = 64,
+        color_feat_dim: int = 64,
+        is_hdr: bool = False,
+    ) -> None:
+        """
+        Constructor of class 'InstantNGPNeRF'.
+
+        Args:
+            pos_dim (int): Dimensionality of coordinate vectors of sample points.
+            view_dir_dim (int): Dimensionality of view direction vectors.
+            density_feat_dim (int): Dimensionality of feature vector within density network.
+                Set to 64 by default following the paper.
+            color_feat_dim (int): Dimensionality of feature vector within color network.
+                Set to 64 by default following the paper.
+            is_hdr (bool): A flag for switching output activation of the color MLP.
+                If True, the network is assumed to be trained on high dynamic range (HDR)
+                training images and the exponential activation is used.
+                Otherwise, the network is assumed to be trained on low dynamic range (i.e., sRGB)
+                training images and the sigmoid activation for limiting the output range to
+                [0.0, 1.0] is used.
+        """
         super().__init__()
+
+        density_mlp_out_dim = 16
+        color_mlp_out_dim = 3
+
+        self._pos_dim = pos_dim
+        self._view_dir_dim = view_dir_dim
+        self._density_feat_dim = density_feat_dim
+        self._color_feat_dim = color_feat_dim
+        self._is_hdr = is_hdr
+
+        # MLPs
+        self.density_mlp = InstantNGPMLP(
+            in_dim=self._pos_dim,
+            out_dim=density_mlp_out_dim,
+            feat_dim=self._density_feat_dim,
+            num_hidden_layer=1,
+        )
+        self.color_mlp = InstantNGPMLP(
+            in_dim=density_mlp_out_dim + self._view_dir_dim,
+            out_dim=color_mlp_out_dim,
+            feat_dim=self._color_feat_dim,
+            num_hidden_layer=2,
+        )
+
+        # activation layer
+        self.density_actvn = nn.ReLU()
+        self.color_actvn = torch.exp if self._is_hdr else nn.Sigmoid()
 
     def forward(
         self,
@@ -24,8 +91,10 @@ class InstantNGPNeRF(nn.Module):
         predicts the corresponding radiance (RGB) and density (sigma).
 
         Args:
-            pos (torch.Tensor): Tensor of shape (N, self.pos_dim). Coordinates of sample points along rays.
-            view_dir (torch.Tensor): Tensor of shape (N, self.dir_dim). View direction vectors.
+            pos (torch.Tensor): Tensor of shape (N, self.pos_dim).
+                Coordinates of sample points along rays.
+            view_dir (torch.Tensor): Tensor of shape (N, self.dir_dim).
+                View direction vectors.
 
         Returns:
             A tuple containing predicted radiance (RGB) and density (sigma) at sample points.
@@ -43,6 +112,42 @@ class InstantNGPNeRF(nn.Module):
             raise ValueError(
                 f"Expected {self._view_dir_dim}-D view direction vector. Got {view_dir.shape[-1]}."
             )
+
+        # predict density (sigma)
+        density_out = self.density_mlp(pos)
+        density_out[..., 0] = self.density_actvn(density_out[..., 0])
+        density = density_out[..., 0].clone()
+
+        # predict radiance (RGB)
+        color = self.color_mlp(torch.cat([density_out, view_dir], dim=-1))
+        color = self.color_actvn(color)
+
+        return density, color
+
+    @property
+    def pos_dim(self) -> int:
+        """Returns the acceptable dimensionality of coordinate vectors."""
+        return self._pos_dim
+
+    @property
+    def view_dir_dim(self) -> int:
+        """Returns the acceptable dimensionality of view direction vectors."""
+        return self._view_dir_dim
+
+    @property
+    def density_feat_dim(self) -> int:
+        """Returns the dimensionality of density network hidden layer feature vectors."""
+        return self._density_feat_dim
+
+    @property
+    def color_feat_dim(self) -> int:
+        """Returns the dimensionality of color network hidden layer feature vectors."""
+        return self._color_feat_dim
+
+    @property
+    def is_hdr(self) -> bool:
+        """Returns the flag indicating which type of output activation is used."""
+        return self._is_hdr
 
 
 class InstantNGPMLP(nn.Module):

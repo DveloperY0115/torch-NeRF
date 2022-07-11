@@ -45,6 +45,20 @@ class MultiResHashTable:
         self._min_res = min_res
         self._max_res = max_res
 
+        # initialize the table entries
+        # the entry values lie in U[-10^{-4}, 10^{-4})
+        self._tables = 2 * (10**-4) * torch.rand(
+            (
+                self._num_level,
+                self._max_entry_per_level,
+                self._feat_dim,
+            )
+        ) - (10**-4)
+
+        # initializes the voxel grid resolutions
+        coeff = torch.tensor((self._max_res / self._min_res) ** (1 / (self._num_level - 1)))
+        coeffs = coeff ** torch.arange(self._num_level)
+        self._resolutions = torch.floor(self._min_res * coeffs)
     @property
     def num_level(self) -> int:
         """Returns the number of grid resolution levels."""

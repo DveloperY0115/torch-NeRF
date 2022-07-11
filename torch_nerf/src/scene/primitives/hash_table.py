@@ -1,5 +1,6 @@
 """
-An implementation of multi-resolution hash table presented in 'InstantNGP'.
+An implementation of multi-resolution hash encoding presented in
+"Instant Neural Graphics Primitives with a Multiresolution Hash Encoding (SIGGRAPH 2022)".
 """
 
 from typing import Tuple
@@ -38,7 +39,36 @@ class MultiResHashTable:
             min_res (int): The coarest voxel grid resolution.
             max_res (int): The finest voxel grid resolution.
         """
-        pass
+        self._num_level = num_level
+        self._max_entry_per_level = max_entry_per_level
+        self._feat_dim = feat_dim
+        self._min_res = min_res
+        self._max_res = max_res
+
+    @property
+    def num_level(self) -> int:
+        """Returns the number of grid resolution levels."""
+        return self._num_level
+
+    @property
+    def max_entry_per_level(self) -> int:
+        """Returns the number of entries in the hash table for each resolution level."""
+        return self._max_entry_per_level
+
+    @property
+    def feat_dim(self) -> int:
+        """Returns the dimensionality of feature vectors."""
+        return self._feat_dim
+
+    @property
+    def min_res(self) -> int:
+        """Returns the coarest voxel grid resolution."""
+        return self._min_res
+
+    @property
+    def max_res(self) -> int:
+        """Returns the finest voxel grid resolution."""
+        return self._max_res
 
 
 class PrimitiveHashEncoding(PrimitiveBase):

@@ -13,11 +13,11 @@ class MultiResHashTable:
     A multi-resolution hash table implemented using Pytorch.
 
     Attributes:
-        num_level (int):
-        max_entry_per_level (int):
-        feat_dim (int):
-        min_res (int):
-        max_res (int):
+        num_level (int): Number of grid resolution levels.
+        max_entry_per_level (int): Number of entries in the hash table for each resolution level.
+        feat_dim (int): Dimensionality of feature vectors.
+        min_res (int): The coarest voxel grid resolution.
+        max_res (int): The finest voxel grid resolution.
     """
 
     def __init__(
@@ -32,11 +32,11 @@ class MultiResHashTable:
         Constructor for 'MultiResHashTable'.
 
         Args:
-            num_level (int):
-            max_entry_per_level (int):
-            feat_dim (int):
-            min_res (int):
-            max_res (int):
+            num_level (int): Number of grid resolution levels.
+            max_entry_per_level (int): Number of entries in the hash table for each resolution level.
+            feat_dim (int): Dimensionality of feature vectors.
+            min_res (int): The coarest voxel grid resolution.
+            max_res (int): The finest voxel grid resolution.
         """
         pass
 
@@ -65,11 +65,11 @@ class PrimitiveHashEncoding(PrimitiveBase):
 
         Args:
             radiance_field (torch.nn.Module):
-            num_level (int):
-            max_entry_per_level (int):
-            feat_dim (int):
-            min_res (int):
-            max_res (int):
+            num_level (int): Number of grid resolution levels.
+            max_entry_per_level (int): Number of entries in the hash table for each resolution level.
+            feat_dim (int): Dimensionality of feature vectors.
+            min_res (int): The coarest voxel grid resolution.
+            max_res (int): The finest voxel grid resolution.
         """
         super().__init__()
 

@@ -9,6 +9,28 @@ import torch
 from torch_nerf.src.scene.primitives.primitive_base import PrimitiveBase
 
 
+def spatial_hash_func(vert_coords: torch.Tensor) -> torch.Tensor:
+    """
+    Hashes the given integer vertex coordinates.
+
+    As described in the paper "Instant-NGP (SIGGRAPH 2022)",
+    the input coordinate (x, y, z) is first scaled by the level's grid resolution
+    and rounded down and up yielding the two integer vertices spanning a voxel.
+
+    This function computes the hashed values of the coordinates of integer vertices
+    following the definition of a spatial hash function presented in Teschner et al., 2003.
+
+    Args:
+        vert_coords (torch.Tensor): Tensor of shape (N, 3).
+            The coordinates of integer vertcies being hashed.
+
+    Returns:
+        hashes (torch.Tensor): Tensor of shape (N, ).
+            The outputs of the spatial hash function.
+    """
+    raise NotImplementedError()
+
+
 class MultiResHashTable:
     """
     A multi-resolution hash table implemented using Pytorch.
@@ -55,10 +77,14 @@ class MultiResHashTable:
             )
         ) - (10**-4)
 
-        # initializes the voxel grid resolutions
+        # initialize the voxel grid resolutions
         coeff = torch.tensor((self._max_res / self._min_res) ** (1 / (self._num_level - 1)))
         coeffs = coeff ** torch.arange(self._num_level)
         self._resolutions = torch.floor(self._min_res * coeffs)
+
+        # register the hash function
+        self._hash_func = spatial_hash_func
+
     @property
     def num_level(self) -> int:
         """Returns the number of grid resolution levels."""

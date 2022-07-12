@@ -74,7 +74,8 @@ class MultiResHashTable:
                 self._num_level,
                 self._max_entry_per_level,
                 self._feat_dim,
-            )
+            ),
+            requires_grad=True,
         ) - (10**-4)
 
         # initialize the voxel grid resolutions

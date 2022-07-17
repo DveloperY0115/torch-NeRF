@@ -4,8 +4,6 @@ Implementation of positional encoder proposed in NeRF (ECCV 2020).
 Source: https://github.com/yenchenlin/nerf-pytorch/blob/master/run_nerf_helpers.py
 """
 
-from math import pi
-
 import torch
 
 

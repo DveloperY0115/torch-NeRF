@@ -13,12 +13,11 @@ def spatial_hash_func(vert_coords: torch.Tensor) -> torch.Tensor:
     """
     Hashes the given integer vertex coordinates.
 
-    As described in the paper "Instant-NGP (SIGGRAPH 2022)",
-    the input coordinate (x, y, z) is first scaled by the level's grid resolution
+    The input coordinate (x, y, z) is first scaled by the level's grid resolution
     and rounded down and up yielding the two integer vertices spanning a voxel.
 
     This function computes the hashed values of the coordinates of integer vertices
-    following the definition of a spatial hash function presented in Teschner et al., 2003.
+    following the definition of a spatial hash function presented in [Teschner et al., 2003].
 
     Args:
         vert_coords (torch.Tensor): Tensor of shape (N, 3).
@@ -56,7 +55,7 @@ class MultiResHashTable:
 
         Args:
             num_level (int): Number of grid resolution levels.
-            max_entry_per_level (int): Number of entries in the hash table for each resolution level.
+            max_entry_per_level (int): Number of entries in the hash table at each resolution.
             feat_dim (int): Dimensionality of feature vectors.
             min_res (int): The coarest voxel grid resolution.
             max_res (int): The finest voxel grid resolution.

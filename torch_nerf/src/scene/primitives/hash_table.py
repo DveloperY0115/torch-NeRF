@@ -136,6 +136,27 @@ class MultiResHashTable:
         """Returns the finest voxel grid resolution."""
         return self._max_res
 
+    def _scale_coordinates(
+        self,
+        coords: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Scales the given 3D coordinates according to the resolution of hash grid being queried.
+
+        Args:
+            coords (torch.Tensor): Tensor of shape (N, 3).
+                3D (real-valued) coordinates of sample points.
+            resolution (int): The resolution of hash grid being queried.
+
+        Returns:
+            scaled_coords (torch.Tensor): Tensor of shape (L, N, 3).
+                A set of 3D (real-valued) coordinates each scaled according
+                to the resolution of the hash grid.
+        """
+        scaled_coords = coords.unsqueeze(0).repeat(self._num_level, 1, 1)
+        scaled_coords = self._resolutions.float() * scaled_coords
+        return scaled_coords
+
 
 class PrimitiveHashEncoding(PrimitiveBase):
     """

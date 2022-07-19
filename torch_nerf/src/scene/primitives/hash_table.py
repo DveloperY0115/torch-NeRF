@@ -146,7 +146,6 @@ class MultiResHashTable:
         Args:
             coords (torch.Tensor): Tensor of shape (N, 3).
                 3D (real-valued) coordinates of sample points.
-            resolution (int): The resolution of hash grid being queried.
 
         Returns:
             scaled_coords (torch.Tensor): Tensor of shape (L, N, 3).

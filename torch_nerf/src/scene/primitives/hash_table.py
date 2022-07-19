@@ -35,6 +35,11 @@ def spatial_hash_func(
         raise ValueError(
             f"Expected integer coordinates as input. Got a tensor of type {vert_coords.type}."
         )
+    if vert_coords.ndim != 2:
+        raise ValueError(
+            "Expected 2D tensor. "
+            f"Got {vert_coords.ndim}-dimensional tensor of shape {vert_coords.shape}."
+        )
 
     curr_device = vert_coords.get_device()
     coeffs = torch.tensor(

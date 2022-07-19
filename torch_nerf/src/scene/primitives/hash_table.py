@@ -9,7 +9,10 @@ import torch
 from torch_nerf.src.scene.primitives.primitive_base import PrimitiveBase
 
 
-def spatial_hash_func(vert_coords: torch.Tensor) -> torch.Tensor:
+def spatial_hash_func(
+    vert_coords: torch.Tensor,
+    num_table_entry: int,
+) -> torch.Tensor:
     """
     Hashes the given integer vertex coordinates.
 
@@ -22,12 +25,31 @@ def spatial_hash_func(vert_coords: torch.Tensor) -> torch.Tensor:
     Args:
         vert_coords (torch.Tensor): Tensor of shape (N, 3).
             The coordinates of integer vertcies being hashed.
+        num_table_entry (int): Number of entries in the hash table.
 
     Returns:
-        hashes (torch.Tensor): Tensor of shape (N, ).
-            The outputs of the spatial hash function.
+        indices (torch.Tensor): Tensor of shape (N, ).
+            The indices specifying entries in the hash table at the level.
     """
-    raise NotImplementedError()
+    if vert_coords.dtype != torch.int32:
+        raise ValueError(
+            f"Expected integer coordinates as input. Got a tensor of type {vert_coords.type}."
+        )
+
+    curr_device = vert_coords.get_device()
+    coeffs = torch.tensor(
+        [[1, 2654435761, 805459861]],
+        dtype=torch.int32,
+        device=curr_device,
+    )
+
+    # hash the integer coordinates
+    x = coeffs * vert_coords
+    indices = torch.bitwise_xor(x[..., 0:1], x[..., 1:2])
+    indices = torch.bitwise_xor(indices, x[..., 2:])
+    indices = indices % num_table_entry
+
+    return indices
 
 
 class MultiResHashTable:
@@ -67,7 +89,6 @@ class MultiResHashTable:
         self._max_res = max_res
 
         # initialize the table entries
-        # the entry values lie in U[-10^{-4}, 10^{-4})
         self._tables = 2 * (10**-4) * torch.rand(
             (
                 self._num_level,

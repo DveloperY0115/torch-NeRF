@@ -184,7 +184,21 @@ class PrimitiveHashEncoding(PrimitiveBase):
         pos: torch.Tensor,
         view_dir: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """ """
+        """
+        Queries the volume bounded by the cube to retrieve radiance and density values.
+
+        Args:
+            pos (torch.Tensor): Tensor of shape (N, S, 3).
+                3D coordinates of sample points.
+            view_dir (torch.Tensor): Tensor of shape (N, S, 3).
+                View direction vectors associated with sample points.
+
+        Returns:
+            sigma (torch.Tensor): Tensor of shape (N, S).
+                The density at each sample point.
+            radiance (torch.Tensor): Tensor of shape (N, S, 3).
+                The radiance at each sample point.
+        """
         return super().query_points(pos, view_dir)
 
     @property

@@ -111,6 +111,73 @@ class MultiResHashTable:
         # register the hash function
         self._hash_func = spatial_hash_func
 
+    def query_table(self, coords: torch.Tensor) -> torch.Tensor:
+        """
+        Queries multiple levels of the hash tables and retrieves the feature vectors.
+
+        Args:
+            coords (torch.Tensor): Tensor of shape (N, 3).
+                3D coordinates of sample points.
+
+        Returns:
+            features (torch.Tensor): Tensor of shape (N, F).
+                Concatenated feature vectors each retrieved from each level of hash tables.
+        """
+        # scale input coordinates and compute floor & ceiling
+        scaled_coords = self._scale_coordinates(coords)
+
+        # query hash tables to compute final feature vector
+        features = []
+        for scaled_coord, table in zip(scaled_coords, self._tables):
+            floor = torch.floor(scaled_coord)
+            ceil = torch.ceil(scaled_coord)
+
+            # identify 8 corners of the voxels enclosing queried points
+            coord_fff = floor
+            coord_cff = torch.cat([ceil[:, 0:1], floor[:, 1:2], floor[:, 2:]], dim=-1)
+            coord_fcf = torch.cat([floor[:, 0:1], ceil[:, 1:2], floor[:, 2:]], dim=-1)
+            coord_ffc = torch.cat([floor[:, 0:1], floor[:, 1:2], ceil[:, 2:]], dim=-1)
+            coord_ccf = torch.cat([ceil[:, 0:1], ceil[:, 1:2], floor[:, 2:]], dim=-1)
+            coord_cfc = torch.cat([ceil[:, 0:1], floor[:, 1:2], ceil[:, 2:]], dim=-1)
+            coord_fcc = torch.cat([floor[:, 0:1], ceil[:, 1:2], ceil[:, 2:]], dim=-1)
+            coord_ccc = ceil
+
+            # hash the coordinates to derived hash table indices
+            num_coords = coord_fff.shape[0]
+            vert_coords = torch.cat(
+                [
+                    coord_fff,
+                    coord_cff,
+                    coord_fcf,
+                    coord_ffc,
+                    coord_ccf,
+                    coord_cfc,
+                    coord_fcc,
+                    coord_ccc,
+                ],
+                dim=0,
+            )
+            indices = self._hash_func(vert_coords, self._max_entry_per_level)
+
+            # retrieve feature vectors from the table
+            vert_feature = table[indices]
+            (
+                feature_fff,
+                feature_cff,
+                feature_fcf,
+                feature_ffc,
+                feature_ccf,
+                feature_cfc,
+                feature_fcc,
+                feature_ccc,
+            ) = torch.split(vert_feature, num_coords, dim=0)
+
+            # trilinear interpolation
+            raise NotImplementedError()
+
+            features = None
+            return features
+
     @property
     def num_level(self) -> int:
         """Returns the number of grid resolution levels."""

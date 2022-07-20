@@ -37,14 +37,15 @@ def init_cuda(cfg: DictConfig) -> None:
             cfg.cuda.device_id = device_id  # overwrite config
             print(f"Set device ID to {cfg.cuda.device_id} by default.")
         torch.cuda.set_device(cfg.cuda.device_id)
-        print(f"CUDA device detected. Using device {torch.cuda.current_device()}.")
+        print(
+            f"CUDA device detected. Using device {torch.cuda.current_device()}."
+        )
     else:
         print("CUDA is not supported on this system. Using CPU by default.")
 
 
 def init_dataset_and_loader(
-    cfg: DictConfig,
-) -> Tuple[data.Dataset, data.DataLoader]:
+    cfg: DictConfig, ) -> Tuple[data.Dataset, data.DataLoader]:
     """
     Initializes the dataset and loader.
 
@@ -96,7 +97,9 @@ def init_dataset_and_loader(
 
     print("===========================================")
     print("Loaded dataset successfully.")
-    print(f"Dataset type / Scene name: {cfg.data.dataset_type} / {cfg.data.scene_name}")
+    print(
+        f"Dataset type / Scene name: {cfg.data.dataset_type} / {cfg.data.scene_name}"
+    )
     print(f"Number of training data: {len(dataset)}")
     print(f"Image resolution: ({dataset.img_height}, {dataset.img_width})")
     print(f"Focal length(s): ({dataset.focal_length}, {dataset.focal_length})")
@@ -106,7 +109,8 @@ def init_dataset_and_loader(
         dataset,
         batch_size=cfg.data.batch_size,
         shuffle=cfg.data.shuffle,
-        num_workers=4,  # TODO: Adjust dynamically according to cfg.cuda.device_id
+        num_workers=
+        4,  # TODO: Adjust dynamically according to cfg.cuda.device_id
     )
 
     return dataset, loader
@@ -178,7 +182,10 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
 
         coarse_scene = scene.PrimitiveCube(
             coarse_network,
-            {"coord_enc": coord_enc, "dir_enc": dir_enc},
+            {
+                "coord_enc": coord_enc,
+                "dir_enc": dir_enc
+            },
         )
 
         scene_dict["coarse"] = coarse_scene
@@ -195,13 +202,18 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
 
             fine_scene = scene.PrimitiveCube(
                 fine_network,
-                {"coord_enc": coord_enc, "dir_enc": dir_enc},
+                {
+                    "coord_enc": coord_enc,
+                    "dir_enc": dir_enc
+                },
             )
 
             scene_dict["fine"] = fine_scene
             print("Initialized 'fine' scene.")
         else:
-            print("Hierarchical sampling disabled. Only 'coarse' scene will be used.")
+            print(
+                "Hierarchical sampling disabled. Only 'coarse' scene will be used."
+            )
 
         return scene_dict
     else:
@@ -224,8 +236,7 @@ def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
     if not "coarse" in scenes.keys():
         raise ValueError(
             "At least a coarse representation the scene is required for training. "
-            f"Got a dictionary whose keys are {scenes.keys()}."
-        )
+            f"Got a dictionary whose keys are {scenes.keys()}.")
 
     optimizer = None
     scheduler = None

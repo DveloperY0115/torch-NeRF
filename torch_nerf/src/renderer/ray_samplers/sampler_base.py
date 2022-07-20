@@ -90,12 +90,10 @@ class RaySamplerBase(object):
         """
         # (u, v) -> (x, y)
         pixel_coords = pixel_coords.float()
-        pixel_coords[:, 0] = (pixel_coords[:, 0] - cam_intrinsic[0, 2]) / cam_intrinsic[
-            0, 0
-        ]
-        pixel_coords[:, 1] = (pixel_coords[:, 1] - cam_intrinsic[1, 2]) / cam_intrinsic[
-            1, 1
-        ]
+        pixel_coords[:, 0] = (pixel_coords[:, 0] -
+                              cam_intrinsic[0, 2]) / cam_intrinsic[0, 0]
+        pixel_coords[:, 1] = (pixel_coords[:, 1] -
+                              cam_intrinsic[1, 2]) / cam_intrinsic[1, 1]
 
         # (x, y) -> (x, y, -1)
         ray_dir = torch.cat(
@@ -178,8 +176,7 @@ class RaySamplerBase(object):
                 raise ValueError(
                     "Focal length used for computing NDC is ambiguous."
                     f"Two different focal lengths ({focal_lengths[0]}, {focal_lengths[1]}) "
-                    "exists but only one can be used."
-                )
+                    "exists but only one can be used.")
             ray_origin, ray_dir = self.map_rays_to_ndc(
                 focal_lengths[0],
                 camera.t_near,
@@ -239,12 +236,10 @@ class RaySamplerBase(object):
             )
 
         # project the ray origin
-        origin_x = -(2 * focal_length / img_width) * (
-            ray_origin[:, 0] / ray_origin[:, 2]
-        )
-        origin_y = -(2 * focal_length / img_height) * (
-            ray_origin[:, 1] / ray_origin[:, 2]
-        )
+        origin_x = -(2 * focal_length / img_width) * (ray_origin[:, 0] /
+                                                      ray_origin[:, 2])
+        origin_y = -(2 * focal_length / img_height) * (ray_origin[:, 1] /
+                                                       ray_origin[:, 2])
         origin_z = 1 + (2 * z_near / ray_origin[:, 2])
         projected_origin = torch.stack(
             [origin_x, origin_y, origin_z],
@@ -253,11 +248,11 @@ class RaySamplerBase(object):
 
         # project the ray directions
         dir_x = -(2 * focal_length / img_width) * (
-            (ray_dir[:, 0] / ray_dir[:, 2]) - (ray_origin[:, 0] / ray_origin[:, 2])
-        )
+            (ray_dir[:, 0] / ray_dir[:, 2]) -
+            (ray_origin[:, 0] / ray_origin[:, 2]))
         dir_y = -(2 * focal_length / img_height) * (
-            (ray_dir[:, 1] / ray_dir[:, 2]) - (ray_origin[:, 1] / ray_origin[:, 2])
-        )
+            (ray_dir[:, 1] / ray_dir[:, 2]) -
+            (ray_origin[:, 1] / ray_origin[:, 2]))
         dir_z = -(2 * z_near / ray_origin[:, 2])
         projected_dir = torch.stack(
             [dir_x, dir_y, dir_z],

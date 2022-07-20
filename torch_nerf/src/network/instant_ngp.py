@@ -198,12 +198,10 @@ class InstantNGPMLP(nn.Module):
 
         # fully-connected layers
         self.fc_in = nn.Linear(self._in_dim, self._feat_dim)
-        self.fc_hidden = nn.ModuleList(
-            [
-                nn.Linear(self._feat_dim, self._feat_dim)
-                for _ in range(self._num_hidden_layer)
-            ]
-        )
+        self.fc_hidden = nn.ModuleList([
+            nn.Linear(self._feat_dim, self._feat_dim)
+            for _ in range(self._num_hidden_layer)
+        ])
         self.fc_out = nn.Linear(self._feat_dim, self._out_dim)
 
         # activation layer

@@ -70,8 +70,7 @@ class PrimitiveCube(PrimitiveBase):
         )
 
         return sigma.reshape(num_ray, num_sample), radiance.reshape(
-            num_ray, num_sample, -1
-        )
+            num_ray, num_sample, -1)
 
     @property
     def radiance_field(self) -> torch.nn.Module:

@@ -22,8 +22,7 @@ class PrimitiveBase(object):
         if not encoders is None:
             if not isinstance(encoders, dict):
                 raise ValueError(
-                    f"Expected a parameter of type Dict. Got {type(encoders)}"
-                )
+                    f"Expected a parameter of type Dict. Got {type(encoders)}")
             if not "coord_enc" in encoders.keys():
                 raise ValueError(
                     f"Missing required encoder type 'coord_enc'. Got {encoders.keys()}."
@@ -55,8 +54,7 @@ class PrimitiveBase(object):
         if pos.shape != view_dir.shape:
             raise ValueError(
                 "Expected tensors of same shape. "
-                f"Got {pos.shape} and {view_dir.shape}, respectively."
-            )
+                f"Got {pos.shape} and {view_dir.shape}, respectively.")
         num_ray, num_sample, _ = pos.shape
         return num_ray, num_sample
 
@@ -72,8 +70,7 @@ class PrimitiveBase(object):
     def encoders(self, new_encoders) -> None:
         if not isinstance(new_encoders, dict):
             raise ValueError(
-                f"Expected a parameter of type Dict. Got {type(new_encoders)}"
-            )
+                f"Expected a parameter of type Dict. Got {type(new_encoders)}")
         if not "coord_enc" in new_encoders.keys():
             raise ValueError(
                 f"Missing required encoder type 'coord_enc'. Got {new_encoders.keys()}."

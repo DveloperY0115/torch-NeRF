@@ -106,9 +106,8 @@ class MultiResHashTable:
 
         # initialize the voxel grid resolutions
         coeff = torch.tensor(
-            (self._max_res / self._min_res) ** (1 / (self._num_level - 1))
-        )
-        coeffs = coeff ** torch.arange(self._num_level)
+            (self._max_res / self._min_res)**(1 / (self._num_level - 1)))
+        coeffs = coeff**torch.arange(self._num_level)
         self._resolutions = torch.floor(self._min_res * coeffs)
 
         # register the hash function
@@ -137,12 +136,18 @@ class MultiResHashTable:
 
             # identify 8 corners of the voxels enclosing queried points
             coord_fff = floor
-            coord_cff = torch.cat([ceil[:, 0:1], floor[:, 1:2], floor[:, 2:]], dim=-1)
-            coord_fcf = torch.cat([floor[:, 0:1], ceil[:, 1:2], floor[:, 2:]], dim=-1)
-            coord_ffc = torch.cat([floor[:, 0:1], floor[:, 1:2], ceil[:, 2:]], dim=-1)
-            coord_ccf = torch.cat([ceil[:, 0:1], ceil[:, 1:2], floor[:, 2:]], dim=-1)
-            coord_cfc = torch.cat([ceil[:, 0:1], floor[:, 1:2], ceil[:, 2:]], dim=-1)
-            coord_fcc = torch.cat([floor[:, 0:1], ceil[:, 1:2], ceil[:, 2:]], dim=-1)
+            coord_cff = torch.cat([ceil[:, 0:1], floor[:, 1:2], floor[:, 2:]],
+                                  dim=-1)
+            coord_fcf = torch.cat([floor[:, 0:1], ceil[:, 1:2], floor[:, 2:]],
+                                  dim=-1)
+            coord_ffc = torch.cat([floor[:, 0:1], floor[:, 1:2], ceil[:, 2:]],
+                                  dim=-1)
+            coord_ccf = torch.cat([ceil[:, 0:1], ceil[:, 1:2], floor[:, 2:]],
+                                  dim=-1)
+            coord_cfc = torch.cat([ceil[:, 0:1], floor[:, 1:2], ceil[:, 2:]],
+                                  dim=-1)
+            coord_fcc = torch.cat([floor[:, 0:1], ceil[:, 1:2], ceil[:, 2:]],
+                                  dim=-1)
             coord_ccc = ceil
 
             # hash the coordinates to derived hash table indices
@@ -176,40 +181,38 @@ class MultiResHashTable:
             ) = torch.split(vert_feature, num_coords, dim=0)
 
             # trilinear interpolation
-            weight_fff = torch.cumprod(
-                torch.abs(coord_ccc.float() - scaled_coord), dim=-1
-            )
-            weight_cff = torch.cumprod(
-                torch.abs(coord_fcc.float() - scaled_coord), dim=-1
-            )
-            weight_fcf = torch.cumprod(
-                torch.abs(coord_cfc.float() - scaled_coord), dim=-1
-            )
-            weight_ffc = torch.cumprod(
-                torch.abs(coord_ccf.float() - scaled_coord), dim=-1
-            )
-            weight_ccf = torch.cumprod(
-                torch.abs(coord_ffc.float() - scaled_coord), dim=-1
-            )
-            weight_cfc = torch.cumprod(
-                torch.abs(coord_fcf.float() - scaled_coord), dim=-1
-            )
-            weight_fcc = torch.cumprod(
-                torch.abs(coord_cff.float() - scaled_coord), dim=-1
-            )
-            weight_ccc = torch.cumprod(
-                torch.abs(coord_fff.float() - scaled_coord), dim=-1
-            )
-            features.append(
-                feature_fff * weight_fff
-                + feature_cff * weight_cff
-                + feature_fcf * weight_fcf
-                + feature_ffc * weight_ffc
-                + feature_ccf * weight_ccf
-                + feature_cfc * weight_cfc
-                + feature_fcc * weight_fcc
-                + feature_ccc * weight_ccc
-            )
+            weight_fff = torch.cumprod(torch.abs(coord_ccc.float() -
+                                                 scaled_coord),
+                                       dim=-1)
+            weight_cff = torch.cumprod(torch.abs(coord_fcc.float() -
+                                                 scaled_coord),
+                                       dim=-1)
+            weight_fcf = torch.cumprod(torch.abs(coord_cfc.float() -
+                                                 scaled_coord),
+                                       dim=-1)
+            weight_ffc = torch.cumprod(torch.abs(coord_ccf.float() -
+                                                 scaled_coord),
+                                       dim=-1)
+            weight_ccf = torch.cumprod(torch.abs(coord_ffc.float() -
+                                                 scaled_coord),
+                                       dim=-1)
+            weight_cfc = torch.cumprod(torch.abs(coord_fcf.float() -
+                                                 scaled_coord),
+                                       dim=-1)
+            weight_fcc = torch.cumprod(torch.abs(coord_cff.float() -
+                                                 scaled_coord),
+                                       dim=-1)
+            weight_ccc = torch.cumprod(torch.abs(coord_fff.float() -
+                                                 scaled_coord),
+                                       dim=-1)
+            features.append(feature_fff * weight_fff +
+                            feature_cff * weight_cff +
+                            feature_fcf * weight_fcf +
+                            feature_ffc * weight_ffc +
+                            feature_ccf * weight_ccf +
+                            feature_cfc * weight_cfc +
+                            feature_fcc * weight_fcc +
+                            feature_ccc * weight_ccc)
 
         features = torch.cat(features, dim=-1)
         return features
@@ -334,7 +337,8 @@ class PrimitiveHashEncoding(PrimitiveBase):
         if not self._view_dir_encoder is None:  # encode view direction vectors
             view_dir = self._view_dir_encoder.encode(view_dir)
 
-        features = self._hash_talbe.query_table(pos.reshape(num_ray * num_sample, -1))
+        features = self._hash_talbe.query_table(
+            pos.reshape(num_ray * num_sample, -1))
 
         sigma, radiance = self._radiance_field(
             features,
@@ -342,8 +346,7 @@ class PrimitiveHashEncoding(PrimitiveBase):
         )
 
         return sigma.reshape(num_ray, num_sample), radiance.reshape(
-            num_ray, num_sample, -1
-        )
+            num_ray, num_sample, -1)
 
     @property
     def radiance_field(self) -> torch.nn.Module:

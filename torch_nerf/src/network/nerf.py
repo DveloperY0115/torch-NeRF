@@ -54,7 +54,8 @@ class NeRF(nn.Module):
         self.fc_6 = nn.Linear(self._feat_dim, self._feat_dim)
         self.fc_7 = nn.Linear(self._feat_dim, self._feat_dim)
         self.fc_8 = nn.Linear(self._feat_dim, self._feat_dim + density_dim)
-        self.fc_9 = nn.Linear(self._feat_dim + self._view_dir_dim, self._feat_dim // 2)
+        self.fc_9 = nn.Linear(self._feat_dim + self._view_dir_dim,
+                              self._feat_dim // 2)
         self.fc_out = nn.Linear(self._feat_dim // 2, rgb_dim)
 
         # activation layer

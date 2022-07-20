@@ -382,17 +382,19 @@ def _save_ckpt(
 
 def _load_ckpt(
     ckpt_file,
-    scenes,
-    optimizer,
-    scheduler=None,
+    default_scene: scene.scene,
+    fine_scene: scene.scene,
+    optimizer: torch.optim.Optimizer,
+    scheduler: object = None,
 ) -> int:
     """
     Loads the checkpoint.
 
     Args:
         ckpt_file (str): A path to the checkpoint file.
-        scenes ():
-        optimizer ():
+        default_scene (scene.scene):
+        fine_scene (scene.scene):
+        optimizer (torch.optim.Optimizer):
         scheduler ():
 
     Returns:
@@ -409,10 +411,12 @@ def _load_ckpt(
     # load epoch
     epoch = ckpt["epoch"]
 
-    # load scene
-    for scene_type, scene in scenes.items():
-        scene.radiance_field.load_state_dict(ckpt[f"scene_{scene_type}"])
-        scene.radiance_field.to(torch.cuda.current_device())
+    # load scene(s)
+    default_scene.radiance_field.load_state_dict(ckpt["scene_default"])
+    default_scene.radiance_field.to(torch.cuda.current_device())
+    if not fine_scene is None:
+        fine_scene.radiance_field.load_state_dict(ckpt["scene_fine"])
+        fine_scene.radiance_field.to(torch.cuda.current_device())
 
     # load optimizer and scheduler states
     if not optimizer is None:

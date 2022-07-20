@@ -28,7 +28,7 @@ class NeRF(nn.Module):
         feat_dim: int = 256,
     ):
         """
-        Constructor of class 'NeRFMLP'.
+        Constructor of class 'NeRF'.
 
         Args:
             pos_dim (int): Dimensionality of coordinate vectors of sample points.
@@ -74,11 +74,16 @@ class NeRF(nn.Module):
         predict the corresponding radiance (RGB) and density (sigma).
 
         Args:
-            pos (torch.Tensor): Tensor of shape (N, self.pos_dim). Coordinates of sample points along rays.
-            view_dir (torch.Tensor): Tensor of shape (N, self.dir_dim). View direction vectors.
+            pos (torch.Tensor): Tensor of shape (N, self.pos_dim).
+                Coordinates of sample points along rays.
+            view_dir (torch.Tensor): Tensor of shape (N, self.dir_dim).
+                View direction vectors.
 
         Returns:
-            A tuple containing predicted radiance (RGB) and density (sigma) at sample points.
+            sigma (torch.Tensor): Tensor of shape (N, ).
+                Density at the given sample points.
+            rgb (torch.Tensor): Tensor of shape (N, 3).
+                Radiance at the given sample points.
         """
         # check input tensors
         if (pos.ndim != 2) or (view_dir.ndim != 2):
@@ -116,16 +121,16 @@ class NeRF(nn.Module):
         return sigma, rgb
 
     @property
-    def pos_dim(self):
+    def pos_dim(self) -> int:
         """Returns the acceptable dimensionality of coordinate vectors."""
         return self._pos_dim
 
     @property
-    def view_dir_dim(self):
+    def view_dir_dim(self) -> int:
         """Returns the acceptable dimensionality of view direction vectors."""
         return self._view_dir_dim
 
     @property
-    def feat_dim(self):
+    def feat_dim(self) -> int:
         """Returns the dimensionality of internal feature vectors."""
         return self._feat_dim

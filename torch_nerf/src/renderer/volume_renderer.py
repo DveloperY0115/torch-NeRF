@@ -2,7 +2,6 @@
 Volume renderer implemented using Pytorch.
 """
 
-import random
 from typing import Optional, Tuple, Union
 
 import numpy as np

@@ -94,7 +94,7 @@ def init_dataset_and_loader(
 
     print("===========================================")
     print("Loaded dataset successfully.")
-    print(f"Dataset type: {cfg.data.dataset_type}")
+    print(f"Dataset type / Scene name: {cfg.data.dataset_type} / {cfg.data.scene_name}")
     print(f"Number of training data: {len(dataset)}")
     print(f"Image resolution: ({dataset.img_height}, {dataset.img_width})")
     print(f"Focal length(s): ({dataset.focal_length}, {dataset.focal_length})")

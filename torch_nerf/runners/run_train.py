@@ -78,6 +78,7 @@ def train_one_epoch(
             cfg.renderer.t_far,
         )
 
+        # TODO: The codes below are dependent to the original NeRF setup
         # forward prop. coarse network
         coarse_pred, coarse_indices, coarse_weights = renderer.render_scene(
             scenes["coarse"],
@@ -135,17 +136,17 @@ def main(cfg: DictConfig) -> None:
     log_dir = HydraConfig.get().runtime.output_dir
 
     # configure device
-    runner_utils.init_cuda(cfg)
+    runner_utils._init_cuda(cfg)
 
     # initialize data, renderer, and scene
-    dataset, loader = runner_utils.init_dataset_and_loader(cfg)
-    renderer = runner_utils.init_renderer(cfg)
-    scenes = runner_utils.init_scene_repr(cfg)
-    optimizer, scheduler = runner_utils.init_optimizer_and_scheduler(cfg, scenes)
-    loss_func = runner_utils.init_objective_func(cfg)
+    dataset, loader = runner_utils._init_dataset_and_loader(cfg)
+    renderer = runner_utils._init_renderer(cfg)
+    scenes = runner_utils._init_scene_repr(cfg)
+    optimizer, scheduler = runner_utils._init_optimizer_and_scheduler(cfg, scenes)
+    loss_func = runner_utils._init_objective_func(cfg)
 
     # load if checkpoint exists
-    start_epoch = runner_utils.load_ckpt(
+    start_epoch = runner_utils._load_ckpt(
         cfg.train_params.ckpt.path,
         scenes,
         optimizer,
@@ -171,7 +172,7 @@ def main(cfg: DictConfig) -> None:
         if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:
             ckpt_dir = os.path.join(log_dir, "ckpt")
 
-            runner_utils.save_ckpt(
+            runner_utils._save_ckpt(
                 ckpt_dir,
                 epoch,
                 scenes,
@@ -186,7 +187,7 @@ def main(cfg: DictConfig) -> None:
                 f"vis/epoch_{epoch}",
             )
 
-            runner_utils.visualize_scene(
+            runner_utils._visualize_scene(
                 cfg,
                 scenes,
                 renderer,

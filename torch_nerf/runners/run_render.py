@@ -28,12 +28,12 @@ def main(cfg: DictConfig) -> None:
     log_dir = os.path.join("render_out", cfg.data.dataset_type, cfg.data.scene_name)
 
     # configure device
-    runner_utils.init_cuda(cfg)
+    runner_utils._init_cuda(cfg)
 
     # initialize data, renderer, and scene
-    dataset, _ = runner_utils.init_dataset_and_loader(cfg)
-    renderer = runner_utils.init_renderer(cfg)
-    scenes = runner_utils.init_scene_repr(cfg)
+    dataset, _ = runner_utils._init_dataset_and_loader(cfg)
+    renderer = runner_utils._init_renderer(cfg)
+    scenes = runner_utils._init_scene_repr(cfg)
 
     if cfg.train_params.ckpt.path is None:
         raise ValueError("Checkpoint file must be provided for rendering.")
@@ -41,7 +41,7 @@ def main(cfg: DictConfig) -> None:
         raise ValueError("Checkpoint file does not exist.")
 
     # load scene representation
-    _ = runner_utils.load_ckpt(
+    _ = runner_utils._load_ckpt(
         cfg.train_params.ckpt.path,
         scenes,
         optimizer=None,
@@ -49,7 +49,7 @@ def main(cfg: DictConfig) -> None:
     )
 
     # render
-    runner_utils.visualize_scene(
+    runner_utils._visualize_scene(
         cfg,
         scenes,
         renderer,

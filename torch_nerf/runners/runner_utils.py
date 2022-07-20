@@ -19,9 +19,14 @@ from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 from torch_nerf.src.utils.data.llff_dataset import LLFFDataset
 
 
-def init_cuda(cfg: DictConfig) -> None:
+
+def _init_cuda(cfg: DictConfig) -> None:
     """
     Checks availability of CUDA devices in the system and set the default device.
+
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to configure CUDA devices.
     """
     if torch.cuda.is_available():
         device_id = cfg.cuda.device_id
@@ -40,7 +45,7 @@ def init_cuda(cfg: DictConfig) -> None:
         print("CUDA is not supported on this system. Using CPU by default.")
 
 
-def init_dataset_and_loader(
+def _init_dataset_and_loader(
     cfg: DictConfig,
 ) -> Tuple[data.Dataset, data.DataLoader]:
     """
@@ -110,7 +115,7 @@ def init_dataset_and_loader(
     return dataset, loader
 
 
-def init_renderer(cfg: DictConfig):
+def _init_renderer(cfg: DictConfig):
     """
     Initializes the renderer for rendering scene representations.
 
@@ -137,7 +142,8 @@ def init_renderer(cfg: DictConfig):
     return renderer
 
 
-def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
+
+def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.PrimitiveBase, Optional[scene.PrimitiveBase]]:
     """
     Initializes the scene representation to be trained / tested.
 
@@ -206,7 +212,7 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
         raise ValueError("Unsupported scene representation.")
 
 
-def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
+def _init_optimizer_and_scheduler(cfg: DictConfig, scenes):
     """
     Initializes the optimizer and learning rate scheduler used for training.
 
@@ -262,7 +268,7 @@ def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
     return optimizer, scheduler
 
 
-def init_objective_func(cfg: DictConfig) -> torch.nn.Module:
+def _init_objective_func(cfg: DictConfig) -> torch.nn.Module:
     """
     Initializes objective functions used to train neural radiance fields.
 
@@ -280,7 +286,7 @@ def init_objective_func(cfg: DictConfig) -> torch.nn.Module:
         raise ValueError("Unsupported loss configuration.")
 
 
-def save_ckpt(
+def _save_ckpt(
     ckpt_dir: str,
     epoch: int,
     scenes,
@@ -315,7 +321,7 @@ def save_ckpt(
     )
 
 
-def load_ckpt(
+def _load_ckpt(
     ckpt_file,
     scenes,
     optimizer,
@@ -359,7 +365,7 @@ def load_ckpt(
     return epoch
 
 
-def visualize_scene(
+def _visualize_scene(
     cfg,
     scenes,
     renderer,

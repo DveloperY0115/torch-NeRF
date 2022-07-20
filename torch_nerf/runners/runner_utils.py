@@ -227,7 +227,11 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.PrimitiveBase, Optional[sce
         raise ValueError("Unsupported scene representation.")
 
 
-def _init_optimizer_and_scheduler(cfg: DictConfig, scenes):
+def _init_optimizer_and_scheduler(
+    cfg: DictConfig,
+    default_scene: scene.scene,
+    fine_scene: scene.scene = None,
+) -> Tuple[torch.optim.Optimizer, Optional[torch.optim.lr_scheduler.lr_scheduler]]:
     """
     Initializes the optimizer and learning rate scheduler used for training.
 
@@ -240,19 +244,13 @@ def _init_optimizer_and_scheduler(cfg: DictConfig, scenes):
         optimizer ():
         scheduler ():
     """
-    if not "coarse" in scenes.keys():
-        raise ValueError(
-            "At least a coarse representation the scene is required for training. "
-            f"Got a dictionary whose keys are {scenes.keys()}."
-        )
-
     optimizer = None
     scheduler = None
 
     # identify parameters to be optimized
-    params = list(scenes["coarse"].radiance_field.parameters())
-    if "fine" in scenes.keys():
-        params += list(scenes["fine"].radiance_field.parameters())
+    params = default_scene.radiance_field.parameters()
+    if not fine_scene is None:
+        params += list(fine_scene.radiance_field.parameters())
 
     # ==============================================================================
     # configure optimizer
@@ -265,7 +263,7 @@ def _init_optimizer_and_scheduler(cfg: DictConfig, scenes):
         raise NotImplementedError()
 
     # ==============================================================================
-
+    # configure learning rate scheduler
     if cfg.train_params.optim.scheduler_type == "exp":
         # compute decay rate
         init_lr = cfg.train_params.optim.init_lr

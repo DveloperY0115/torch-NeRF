@@ -19,13 +19,15 @@ class PrimitiveBase(object):
     ):
         if not encoders is None:
             if not isinstance(encoders, dict):
-                raise ValueError(f"Expected a parameter of type Dict. Got {type(encoders)}")
+                raise ValueError(
+                    f"Expected a parameter of type Dict. Got {type(encoders)}")
             if not "coord_enc" in encoders.keys():
                 raise ValueError(
                     f"Missing required encoder type 'coord_enc'. Got {encoders.keys()}."
                 )
             if not "dir_enc" in encoders.keys():
-                raise ValueError(f"Missing required encoder type 'dir_enc'. Got {encoders.keys()}.")
+                raise ValueError(
+                    f"Missing required encoder type 'dir_enc'. Got {encoders.keys()}.")
         self._encoders = encoders
 
     def query_points(
@@ -65,11 +67,13 @@ class PrimitiveBase(object):
     @encoders.setter
     def encoders(self, new_encoders) -> None:
         if not isinstance(new_encoders, dict):
-            raise ValueError(f"Expected a parameter of type Dict. Got {type(new_encoders)}")
+            raise ValueError(
+                f"Expected a parameter of type Dict. Got {type(new_encoders)}")
         if not "coord_enc" in new_encoders.keys():
             raise ValueError(
                 f"Missing required encoder type 'coord_enc'. Got {new_encoders.keys()}."
             )
         if not "dir_enc" in new_encoders.keys():
-            raise ValueError(f"Missing required encoder type 'dir_enc'. Got {new_encoders.keys()}.")
+            raise ValueError(
+                f"Missing required encoder type 'dir_enc'. Got {new_encoders.keys()}.")
         self._encoders = new_encoders

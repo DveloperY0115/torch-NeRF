@@ -1,7 +1,6 @@
 """
 Pytorch implementation of MLP used in NeRF (ECCV 2020).
 """
-
 from typing import Tuple
 
 import torch

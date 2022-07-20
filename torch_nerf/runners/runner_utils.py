@@ -1,7 +1,8 @@
 """A set of utility functions commonly used in training/testing scripts."""
-
 import os
-from typing import Dict, Tuple, Union
+from typing import Dict
+from typing import Tuple
+from typing import Union
 
 import torch
 import torch.utils.data as data

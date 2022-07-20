@@ -1,8 +1,9 @@
 """
 A simple cubic primitive suitable for forward-facing, bounded scenes.
 """
-
-from typing import Dict, Optional, Tuple
+from typing import Dict
+from typing import Optional
+from typing import Tuple
 
 import torch
 

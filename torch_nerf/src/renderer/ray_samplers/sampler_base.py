@@ -1,7 +1,6 @@
 """
 Base class for ray samplers.
 """
-
 from typing import Tuple
 
 import torch

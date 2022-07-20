@@ -1,7 +1,6 @@
 """
 Pytorch implementation of MLP used in Instant Neural Graphics Primitives (SIGGRAPH 2022).
 """
-
 from typing import Tuple
 
 import torch

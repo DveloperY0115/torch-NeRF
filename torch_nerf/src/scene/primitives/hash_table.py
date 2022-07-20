@@ -2,8 +2,8 @@
 An implementation of multi-resolution hash encoding presented in
 "Instant Neural Graphics Primitives with a Multiresolution Hash Encoding (SIGGRAPH 2022)".
 """
-
-from typing import Optional, Tuple
+from typing import Optional
+from typing import Tuple
 
 import torch
 

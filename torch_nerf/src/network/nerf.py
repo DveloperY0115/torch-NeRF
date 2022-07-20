@@ -2,13 +2,13 @@
 Pytorch implementation of MLP used in NeRF (ECCV 2020).
 """
 
-from typing import Dict
+from typing import Tuple
 
 import torch
 import torch.nn as nn
 
 
-class NeRFMLP(nn.Module):
+class NeRF(nn.Module):
     """
     A multi-layer perceptron (MLP) used for learning neural radiance fields.
 
@@ -66,7 +66,7 @@ class NeRFMLP(nn.Module):
         self,
         pos: torch.Tensor,
         view_dir: torch.Tensor,
-    ) -> Dict[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Predicts color and density.
 
@@ -78,7 +78,7 @@ class NeRFMLP(nn.Module):
             view_dir (torch.Tensor): Tensor of shape (N, self.dir_dim). View direction vectors.
 
         Returns:
-            A dict containing predicted radiance (RGB) and density (sigma) at sample points.
+            A tuple containing predicted radiance (RGB) and density (sigma) at sample points.
         """
         # check input tensors
         if (pos.ndim != 2) or (view_dir.ndim != 2):

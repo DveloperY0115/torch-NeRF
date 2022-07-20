@@ -145,8 +145,8 @@ class RaySamplerBase(object):
         Args:
             pixel_coords (torch.Tensor): Tensor of shape (N, 2).
                 A flattened array of pixel coordinates.
-            camera (Camera):
-            project_to_ndc (bool):
+            camera (Camera): A camera object holding extrinsic and intrinsic matrices.
+            project_to_ndc (bool): A flag for toggling NDC space projection.
 
         Returns:
             ray_bundle (RayBundle): An instane of 'RayBundle' containing ray information

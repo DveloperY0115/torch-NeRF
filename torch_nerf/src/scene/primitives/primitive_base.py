@@ -17,12 +17,15 @@ class PrimitiveBase(object):
         self,
         encoders: Optional[Dict[str, SignalEncoderBase]] = None,
     ):
-        if not isinstance(encoders, dict):
-            raise ValueError(f"Expected a parameter of type Dict. Got {type(encoders)}")
-        if not "coord_enc" in encoders.keys():
-            raise ValueError(f"Missing required encoder type 'coord_enc'. Got {encoders.keys()}.")
-        if not "dir_enc" in encoders.keys():
-            raise ValueError(f"Missing required encoder type 'dir_enc'. Got {encoders.keys()}.")
+        if not encoders is None:
+            if not isinstance(encoders, dict):
+                raise ValueError(f"Expected a parameter of type Dict. Got {type(encoders)}")
+            if not "coord_enc" in encoders.keys():
+                raise ValueError(
+                    f"Missing required encoder type 'coord_enc'. Got {encoders.keys()}."
+                )
+            if not "dir_enc" in encoders.keys():
+                raise ValueError(f"Missing required encoder type 'dir_enc'. Got {encoders.keys()}.")
         self._encoders = encoders
 
     def query_points(
@@ -43,7 +46,13 @@ class PrimitiveBase(object):
             radiance (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
                 The radiance at each sample point.
         """
-        raise NotImplementedError()
+        if pos.shape != view_dir.shape:
+            raise ValueError(
+                "Expected tensors of same shape. "
+                f"Got {pos.shape} and {view_dir.shape}, respectively."
+            )
+        num_ray, num_sample, _ = pos.shape
+        return num_ray, num_sample
 
     @property
     def encoders(self) -> Optional[Dict[str, SignalEncoderBase]]:

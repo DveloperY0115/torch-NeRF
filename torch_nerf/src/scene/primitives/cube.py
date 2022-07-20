@@ -23,7 +23,7 @@ class PrimitiveCube(PrimitiveBase):
         encoders: Optional[Dict[str, SignalEncoderBase]] = None,
     ):
         """
-        Constructor for QSCube.
+        Constructor for 'PrimitiveCube'.
 
         Args:
             radiance_field (torch.nn.Module): A network representing the scene.
@@ -42,26 +42,21 @@ class PrimitiveCube(PrimitiveBase):
         view_dir: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Query the volume bounded by the cube to retrieve radiance and density values.
+        Queries the volume bounded by the cube to retrieve radiance and density values.
 
         Args:
-            pos (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
+            pos (torch.Tensor): Tensor of shape (N, S, 3).
                 3D coordinates of sample points.
-            view_dir (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
+            view_dir (torch.Tensor): Tensor of shape (N, S, 3).
                 View direction vectors associated with sample points.
 
         Returns:
-            sigma (torch.Tensor): An instance of torch.Tensor of shape (N, S).
+            sigma (torch.Tensor): Tensor of shape (N, S).
                 The density at each sample point.
-            radiance (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
+            radiance (torch.Tensor): Tensor of shape (N, S, 3).
                 The radiance at each sample point.
         """
-        if pos.shape != view_dir.shape:
-            raise ValueError(
-                "Expected tensors of same shape. "
-                f"Got {pos.shape} and {view_dir.shape}, respectively."
-            )
-        num_ray, num_sample, _ = pos.shape
+        num_ray, num_sample = super().query_points(pos, view_dir)
 
         if not self.encoders is None:  # encode input signals
             pos = self.encoders["coord_enc"].encode(pos)

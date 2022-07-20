@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 
 
-class InstantNGPNeRF(nn.Module):
+class InstantNeRF(nn.Module):
     """
     A neural network that approximates neural radiance fields.
 
@@ -34,7 +34,7 @@ class InstantNGPNeRF(nn.Module):
         is_hdr: bool = False,
     ) -> None:
         """
-        Constructor of class 'InstantNGPNeRF'.
+        Constructor of class 'InstantNeRF'.
 
         Args:
             pos_dim (int): Dimensionality of coordinate vectors of sample points.
@@ -62,13 +62,13 @@ class InstantNGPNeRF(nn.Module):
         self._is_hdr = is_hdr
 
         # MLPs
-        self.density_mlp = InstantNGPMLP(
+        self.density_mlp = InstantNeRFMLP(
             in_dim=self._pos_dim,
             out_dim=density_mlp_out_dim,
             feat_dim=self._density_feat_dim,
             num_hidden_layer=1,
         )
-        self.color_mlp = InstantNGPMLP(
+        self.color_mlp = InstantNeRFMLP(
             in_dim=density_mlp_out_dim + self._view_dir_dim,
             out_dim=color_mlp_out_dim,
             feat_dim=self._color_feat_dim,
@@ -150,7 +150,7 @@ class InstantNGPNeRF(nn.Module):
         return self._is_hdr
 
 
-class InstantNGPMLP(nn.Module):
+class InstantNeRFMLP(nn.Module):
     """
     A multi-layer perceptron (MLP) used for learning neural radiance fields.
 
@@ -177,7 +177,7 @@ class InstantNGPMLP(nn.Module):
         num_hidden_layer: int = 2,
     ) -> None:
         """
-        Constructor of class 'InstantNGPMLP'.
+        Constructor of class 'InstantNeRFMLP'.
 
         Args:
             in_dim (int): Dimensionality of input features.

@@ -21,6 +21,45 @@ from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 from torch_nerf.src.utils.data.llff_dataset import LLFFDataset
 
 
+def init_session(cfg: DictConfig) -> Callable:
+    """
+    Initializes the current session and returns its entry point.
+
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup the session.
+
+    Returns:
+        run_session (Callable): A function that serves as the entry point for
+            the current (training, validation, or visualization) session.
+    """
+    # identify log directories
+    log_dir = HydraConfig.get().runtime.output_dir
+    tb_log_dir = os.path.join(log_dir, "tensorboard")
+
+    # initialize Tensorboard writer
+    writer = _init_tensorboard(tb_log_dir)
+
+    # initialize CUDA device
+    _init_cuda(cfg)
+
+    # initialize renderer, data
+    renderer = _init_renderer(cfg)
+    dataset, loader = _init_dataset_and_loader(cfg)
+
+    # initialize scene
+    default_scene, fine_scene = _init_scene_repr(cfg)
+
+    # initialize optimizer and learning rate scheduler
+    optimizer, scheduler = _init_optimizer_and_scheduler(
+        cfg,
+        default_scene,
+        fine_scene=fine_scene,
+    )
+
+    # initialize objective function
+    loss_func = _init_loss_func(cfg)
+
 
 def _init_cuda(cfg: DictConfig) -> None:
     """

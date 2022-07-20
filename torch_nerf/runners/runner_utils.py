@@ -320,7 +320,7 @@ def _init_optimizer_and_scheduler(
     return optimizer, scheduler
 
 
-def _init_objective_func(cfg: DictConfig) -> torch.nn.Module:
+def _init_loss_func(cfg: DictConfig) -> torch.nn.Module:
     """
     Initializes objective functions used to train neural radiance fields.
 

@@ -1,5 +1,3 @@
-strategy:
-  use_hierarchical_sampling: True
 optim:
   num_iter: 300000
   optim_type: adam

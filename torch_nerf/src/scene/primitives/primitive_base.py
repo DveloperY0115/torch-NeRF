@@ -46,7 +46,13 @@ class PrimitiveBase(object):
             radiance (torch.Tensor): An instance of torch.Tensor of shape (N, S, 3).
                 The radiance at each sample point.
         """
-        raise NotImplementedError()
+        if pos.shape != view_dir.shape:
+            raise ValueError(
+                "Expected tensors of same shape. "
+                f"Got {pos.shape} and {view_dir.shape}, respectively."
+            )
+        num_ray, num_sample, _ = pos.shape
+        return num_ray, num_sample
 
     @property
     def encoders(self) -> Optional[Dict[str, SignalEncoderBase]]:

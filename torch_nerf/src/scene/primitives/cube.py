@@ -56,12 +56,7 @@ class PrimitiveCube(PrimitiveBase):
             radiance (torch.Tensor): Tensor of shape (N, S, 3).
                 The radiance at each sample point.
         """
-        if pos.shape != view_dir.shape:
-            raise ValueError(
-                "Expected tensors of same shape. "
-                f"Got {pos.shape} and {view_dir.shape}, respectively."
-            )
-        num_ray, num_sample, _ = pos.shape
+        num_ray, num_sample = super().query_points(pos, view_dir)
 
         if not self.encoders is None:  # encode input signals
             pos = self.encoders["coord_enc"].encode(pos)

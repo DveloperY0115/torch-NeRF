@@ -341,8 +341,9 @@ def _init_loss_func(cfg: DictConfig) -> torch.nn.Module:
 def _save_ckpt(
     ckpt_dir: str,
     epoch: int,
-    scenes,
-    optimizer,
+    default_scene: scene.scene,
+    fine_scene: scene.scene,
+    optimizer: torch.optim.Optimizer,
     scheduler,
 ) -> None:
     """
@@ -350,7 +351,8 @@ def _save_ckpt(
 
     Args:
         epoch (int):
-        scenes (Dict):
+        default_scene (scene.scene):
+        fine_scene (scene.scene):
         optimizer ():
         scheduler ():
     """
@@ -361,11 +363,16 @@ def _save_ckpt(
     ckpt = {
         "epoch": epoch,
         "optimizer_state_dict": optimizer.state_dict(),
-        "scheduler_state_dict": scheduler.state_dict(),
     }
 
-    for scene_type, scene in scenes.items():
-        ckpt[f"scene_{scene_type}"] = scene.radiance_field.state_dict()
+    # save scheduler state
+    if not scheduler is None:
+        ckpt["scheduler_state_dict"] = scheduler.state_dict()
+
+    # save scene(s)
+    ckpt["scene_default"] = default_scene.radiance_field.state_dict()
+    if not fine_scene is None:
+        ckpt["scene_fine"] = fine_scene.radiance_field.state_dict()
 
     torch.save(
         ckpt,

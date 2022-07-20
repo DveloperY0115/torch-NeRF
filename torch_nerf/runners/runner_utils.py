@@ -35,8 +35,7 @@ def init_cuda(cfg: DictConfig) -> None:
             cfg.cuda.device_id = device_id  # overwrite config
             print(f"Set device ID to {cfg.cuda.device_id} by default.")
         torch.cuda.set_device(cfg.cuda.device_id)
-        print(
-            f"CUDA device detected. Using device {torch.cuda.current_device()}.")
+        print(f"CUDA device detected. Using device {torch.cuda.current_device()}.")
     else:
         print("CUDA is not supported on this system. Using CPU by default.")
 
@@ -95,8 +94,7 @@ def init_dataset_and_loader(
 
     print("===========================================")
     print("Loaded dataset successfully.")
-    print(
-        f"Dataset type / Scene name: {cfg.data.dataset_type} / {cfg.data.scene_name}")
+    print(f"Dataset type / Scene name: {cfg.data.dataset_type} / {cfg.data.scene_name}")
     print(f"Number of training data: {len(dataset)}")
     print(f"Image resolution: ({dataset.img_height}, {dataset.img_width})")
     print(f"Focal length(s): ({dataset.focal_length}, {dataset.focal_length})")
@@ -428,8 +426,10 @@ def visualize_scene(
                 pixel_pred, _, _ = renderer.render_scene(
                     scenes["fine"],
                     num_pixels=num_total_pixel,
-                    num_samples=(cfg.renderer.num_samples_coarse,
-                                 cfg.renderer.num_samples_fine),
+                    num_samples=(
+                        cfg.renderer.num_samples_coarse,
+                        cfg.renderer.num_samples_fine,
+                    ),
                     project_to_ndc=cfg.renderer.project_to_ndc,
                     pixel_indices=coarse_indices,
                     weights=coarse_weights,

@@ -102,14 +102,16 @@ class InstantNGPNeRF(nn.Module):
         # check input tensors
         if (pos.ndim != 2) or (view_dir.ndim != 2):
             raise ValueError(
-                f"Expected 2D tensors. Got {pos.ndim}, {view_dir.ndim}-D tensors.")
+                f"Expected 2D tensors. Got {pos.ndim}, {view_dir.ndim}-D tensors."
+            )
         if pos.shape[0] != view_dir.shape[0]:
             raise ValueError(
                 f"The number of samples must match. Got {pos.shape[0]} and {view_dir.shape[0]}."
             )
         if pos.shape[-1] != self._pos_dim:
             raise ValueError(
-                f"Expected {self._pos_dim}-D position vector. Got {pos.shape[-1]}.")
+                f"Expected {self._pos_dim}-D position vector. Got {pos.shape[-1]}."
+            )
         if view_dir.shape[-1] != self._view_dir_dim:
             raise ValueError(
                 f"Expected {self._view_dir_dim}-D view direction vector. Got {view_dir.shape[-1]}."
@@ -198,8 +200,10 @@ class InstantNGPMLP(nn.Module):
         # fully-connected layers
         self.fc_in = nn.Linear(self._in_dim, self._feat_dim)
         self.fc_hidden = nn.ModuleList(
-            [nn.Linear(self._feat_dim, self._feat_dim)
-             for _ in range(self._num_hidden_layer)]
+            [
+                nn.Linear(self._feat_dim, self._feat_dim)
+                for _ in range(self._num_hidden_layer)
+            ]
         )
         self.fc_out = nn.Linear(self._feat_dim, self._out_dim)
 
@@ -223,7 +227,8 @@ class InstantNGPMLP(nn.Module):
             raise ValueError(f"Expected a 2D tensor. Got {x.ndim}-D tensor.")
         if x.shape[-1] != self.in_dim:
             raise ValueError(
-                f"Expected {self.in_dim}-D position vector. Got {x.shape[-1]}.")
+                f"Expected {self.in_dim}-D position vector. Got {x.shape[-1]}."
+            )
 
         out = self.relu_actvn(self.fc_in(x))
 

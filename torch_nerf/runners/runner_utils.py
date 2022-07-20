@@ -142,6 +142,21 @@ def _init_renderer(cfg: DictConfig):
     return renderer
 
 
+def _init_tensorboard(tb_log_dir: str) -> SummaryWriter:
+    """
+    Initializes tensorboard writer.
+
+    Args:
+        tb_log_dir (str): A directory where Tensorboard logs will be saved.
+
+    Returns:
+        writer (SummaryWriter): A writer (handle) for logging data.
+    """
+    if not os.path.exists(tb_log_dir):
+        os.mkdir(tb_log_dir)
+    writer = SummaryWriter(log_dir=tb_log_dir)
+    return writer
+
 
 def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.PrimitiveBase, Optional[scene.PrimitiveBase]]:
     """

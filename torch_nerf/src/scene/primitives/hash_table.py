@@ -41,11 +41,10 @@ def spatial_hash_func(
             f"Got {vert_coords.ndim}-dimensional tensor of shape {vert_coords.shape}."
         )
 
-    curr_device = vert_coords.get_device()
     coeffs = torch.tensor(
         [[1, 2654435761, 805459861]],
         dtype=torch.int32,
-        device=curr_device,
+        device=vert_coords.get_device(),
     )
 
     # hash the integer coordinates

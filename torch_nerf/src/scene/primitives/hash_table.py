@@ -172,10 +172,27 @@ class MultiResHashTable:
             ) = torch.split(vert_feature, num_coords, dim=0)
 
             # trilinear interpolation
-            raise NotImplementedError()
+            weight_fff = torch.cumprod(torch.abs(coord_ccc.float() - scaled_coord), dim=-1)
+            weight_cff = torch.cumprod(torch.abs(coord_fcc.float() - scaled_coord), dim=-1)
+            weight_fcf = torch.cumprod(torch.abs(coord_cfc.float() - scaled_coord), dim=-1)
+            weight_ffc = torch.cumprod(torch.abs(coord_ccf.float() - scaled_coord), dim=-1)
+            weight_ccf = torch.cumprod(torch.abs(coord_ffc.float() - scaled_coord), dim=-1)
+            weight_cfc = torch.cumprod(torch.abs(coord_fcf.float() - scaled_coord), dim=-1)
+            weight_fcc = torch.cumprod(torch.abs(coord_cff.float() - scaled_coord), dim=-1)
+            weight_ccc = torch.cumprod(torch.abs(coord_fff.float() - scaled_coord), dim=-1)
+            features.append(
+                feature_fff * weight_fff
+                + feature_cff * weight_cff
+                + feature_fcf * weight_fcf
+                + feature_ffc * weight_ffc
+                + feature_ccf * weight_ccf
+                + feature_cfc * weight_cfc
+                + feature_fcc * weight_fcc
+                + feature_ccc * weight_ccc
+            )
 
-            features = None
-            return features
+        features = torch.cat(features, dim=-1)
+        return features
 
     @property
     def num_level(self) -> int:

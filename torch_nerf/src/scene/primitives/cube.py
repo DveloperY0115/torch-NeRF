@@ -5,6 +5,7 @@ A simple cubic primitive suitable for forward-facing, bounded scenes.
 from typing import Dict, Optional, Tuple
 
 import torch
+
 from torch_nerf.src.scene.primitives.primitive_base import PrimitiveBase
 from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
 

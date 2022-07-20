@@ -3,9 +3,10 @@ An implementation of multi-resolution hash encoding presented in
 "Instant Neural Graphics Primitives with a Multiresolution Hash Encoding (SIGGRAPH 2022)".
 """
 
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import torch
+
 from torch_nerf.src.scene.primitives.primitive_base import PrimitiveBase
 from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
 

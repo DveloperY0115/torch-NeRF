@@ -3,18 +3,19 @@
 import os
 from typing import Dict, Tuple, Union
 
-from omegaconf import DictConfig
 import torch
 import torch.utils.data as data
 import torchvision.utils as tvu
+from omegaconf import DictConfig
 from tqdm import tqdm
+
 import torch_nerf.src.network as network
-import torch_nerf.src.scene as scene
 import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.src.renderer.integrators.quadrature_integrator as integrators
 import torch_nerf.src.renderer.ray_samplers as ray_samplers
-from torch_nerf.src.renderer.volume_renderer import VolumeRenderer
+import torch_nerf.src.scene as scene
 import torch_nerf.src.signal_encoder.positional_encoder as pe
+from torch_nerf.src.renderer.volume_renderer import VolumeRenderer
 from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 from torch_nerf.src.utils.data.llff_dataset import LLFFDataset
 

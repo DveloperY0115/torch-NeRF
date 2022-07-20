@@ -171,16 +171,11 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.PrimitiveBase, Optional[sce
             to setup scene representation.
 
     Returns:
-        scenes (Dict): A dictionary containing instances of subclasses of QueryStructBase.
-            It contains two separate scene representations each associated with
-            a key 'coarse' and 'fine', respectively.
+        default_scene (scene.scene): A scene representation used by default.
+        fine_scene (scene.scene): An additional scene representation used with
+            hierarchical sampling strategy.
     """
     if cfg.scene.type == "cube":
-        scene_dict = {}
-
-        # =========================================================
-        # initialize 'coarse' scene
-        # =========================================================
         coord_enc = pe.PositionalEncoder(
             cfg.network.pos_dim,
             cfg.signal_encoder.coord_encode_level,
@@ -192,23 +187,18 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.PrimitiveBase, Optional[sce
             cfg.signal_encoder.include_input,
         )
 
-        coarse_network = network.NeRF(
+        default_network = network.NeRF(
             coord_enc.out_dim,
             dir_enc.out_dim,
         ).to(cfg.cuda.device_id)
 
-        coarse_scene = scene.PrimitiveCube(
-            coarse_network,
+        default_scene = scene.PrimitiveCube(
+            default_network,
             {"coord_enc": coord_enc, "dir_enc": dir_enc},
         )
 
-        scene_dict["coarse"] = coarse_scene
-        print("Initialized 'coarse' scene.")
-
-        # =========================================================
-        # initialize 'fine' scene
-        # =========================================================
-        if cfg.renderer.num_samples_fine > 0:
+        fine_scene = None
+        if cfg.renderer.num_samples_fine > 0:  # initialize fine scene
             fine_network = network.NeRF(
                 coord_enc.out_dim,
                 dir_enc.out_dim,
@@ -218,13 +208,21 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.PrimitiveBase, Optional[sce
                 fine_network,
                 {"coord_enc": coord_enc, "dir_enc": dir_enc},
             )
+        return default_scene, fine_scene
+    elif cfg.scene.type == "hash_encoding":
+        """
+        dir_enc = pe.PositionalEncoder(
+            cfg.network.view_dir_dim,
+            cfg.signal_encoder.dir_encode_level,
+            cfg.signal_encoder.include_input,
+        )
 
-            scene_dict["fine"] = fine_scene
-            print("Initialized 'fine' scene.")
-        else:
-            print("Hierarchical sampling disabled. Only 'coarse' scene will be used.")
+        network = network.InstantNeRF(
+            # compute input feature vector dimension
 
-        return scene_dict
+        )
+        """
+        raise NotImplementedError()
     else:
         raise ValueError("Unsupported scene representation.")
 

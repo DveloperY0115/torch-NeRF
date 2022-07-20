@@ -310,7 +310,19 @@ class PrimitiveHashEncoding(PrimitiveBase):
             radiance (torch.Tensor): Tensor of shape (N, S, 3).
                 The radiance at each sample point.
         """
-        return super().query_points(pos, view_dir)
+        num_ray, num_sample = super().query_points(pos, view_dir)
+
+        if not self._view_dir_encoder is None:  # encode view direction vectors
+            view_dir = self._view_dir_encoder.encode(view_dir)
+
+        features = self._hash_talbe.query_table(pos.reshape(num_ray * num_sample, -1))
+
+        sigma, radiance = self._radiance_field(
+            features,
+            view_dir.reshape(num_ray * num_sample, -1),
+        )
+
+        return sigma.reshape(num_ray, num_sample), radiance.reshape(num_ray, num_sample, -1)
 
     @property
     def radiance_field(self) -> torch.nn.Module:

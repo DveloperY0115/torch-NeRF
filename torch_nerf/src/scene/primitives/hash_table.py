@@ -3,10 +3,11 @@ An implementation of multi-resolution hash encoding presented in
 "Instant Neural Graphics Primitives with a Multiresolution Hash Encoding (SIGGRAPH 2022)".
 """
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 import torch
 from torch_nerf.src.scene.primitives.primitive_base import PrimitiveBase
+from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
 
 
 def spatial_hash_func(
@@ -122,7 +123,7 @@ class MultiResHashTable:
             features (torch.Tensor): Tensor of shape (N, F).
                 Concatenated feature vectors each retrieved from each level of hash tables.
         """
-        # scale input coordinates and compute floor & ceiling
+        # scale input coordinates
         scaled_coords = self._scale_coordinates(coords)
 
         # query hash tables to compute final feature vector
@@ -258,6 +259,7 @@ class PrimitiveHashEncoding(PrimitiveBase):
         feat_dim: int,
         min_res: int,
         max_res: int,
+        view_dir_encoder: Optional[SignalEncoderBase] = None,
     ):
         """
         Constructor for 'PrimitiveHashTable'.
@@ -277,6 +279,7 @@ class PrimitiveHashEncoding(PrimitiveBase):
                 f"Expected a parameter of type torch.nn.Module. Got {type(radiance_field)}."
             )
         self._radiance_field = radiance_field
+        self._view_dir_encoder = view_dir_encoder
 
         # construct multi-resolution hash table
         self._hash_talbe = MultiResHashTable(

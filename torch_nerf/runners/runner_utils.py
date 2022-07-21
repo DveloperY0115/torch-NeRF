@@ -86,6 +86,44 @@ def init_session(cfg: DictConfig) -> Callable:
     validate_one_epoch = _build_validation_routine(cfg)
     vis_one_epoch = _build_visualization_routine(cfg)
 
+    # combine all routines into one
+    def run_session():
+        for epoch in tqdm(range(start_epoch, cfg.train_params.optim.num_iter // len(dataset))):
+            # train
+            train_losses = train_one_epoch()
+            for loss_name, value in train_losses.items():
+                writer.add_scalar(f"Train_Loss/{loss_name}", value, epoch)
+
+            """
+            # validate
+            if not validate_one_epoch is None:
+                valid_losses = validate_one_epoch()
+                for loss_name, value in valid_losses.items():
+                    writer.add_scalar(f"Validation_Loss/{loss_name}", value, epoch)
+
+            # visualize
+            if (epoch + 1) % cfg.train_params.log.epoch_btw_vis == 0:
+                save_dir = os.path.join(
+                    log_dir,
+                    f"vis/epoch_{epoch}",
+                )
+                vis_one_epoch(save_dir)
+            """
+            # save checkpoint
+            if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:
+                ckpt_dir = os.path.join(log_dir, "ckpt")
+                _save_ckpt(
+                    ckpt_dir,
+                    epoch,
+                    default_scene,
+                    fine_scene,
+                    optimizer,
+                    scheduler,
+                )
+
+    return run_session
+
+
 def _build_train_routine(
     cfg: DictConfig,
     default_scene: scene.scene,

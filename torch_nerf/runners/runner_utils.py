@@ -72,17 +72,229 @@ def init_session(cfg: DictConfig) -> Callable:
 
     # build train, validation, and visualization routine
     # with their parameters binded
-    train_one_epoch = _build_train_routine(cfg)
+    train_one_epoch = _build_train_routine(
+        cfg,
+        default_scene,
+        fine_scene,
+        renderer,
+        dataset,
+        loader,
+        loss_func,
+        optimizer,
+        scheduler,
+    )
     validate_one_epoch = _build_validation_routine(cfg)
     vis_one_epoch = _build_visualization_routine(cfg)
 
-def _build_train_routine(cfg) -> Callable:
-    """ """
+def _build_train_routine(
+    cfg: DictConfig,
+    default_scene: scene.scene,
+    fine_scene: scene.scene,
+    renderer: VolumeRenderer,
+    dataset: data.Dataset,
+    loader: data.DataLoader,
+    loss_func: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    scheduler: object = None,
+) -> Callable:
+    """
+    Builds per epoch training routine.
 
-    def a(p):
-        return p + 1
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup scene representation.
+        default_scene (scene.scene): A default scene representation to be optimized.
+        fine_scene (scene.scene): A fine scene representation to be optimized.
+            This representation is only used when hierarchical sampling is used.
+        renderer (VolumeRenderer): Volume renderer used to render the scene.
+        dataset (torch.utils.data.Dataset): Dataset for training data.
+        loader (torch.utils.data.DataLoader): Loader for training data.
+        loss_func (torch.nn.Module): Objective function to be optimized.
+        optimizer (torch.optim.Optimizer): Optimizer.
+        scheduler (torch.optim.lr_scheduler.ExponentialLR): Learning rate scheduler.
+            Set to None by default.
 
-    return functools.partial(a, 1)
+    Returns:
+        train_one_epoch (Callable):
+    """
+    # resolve training configuration
+    use_hierarchical_sampling = not fine_scene is None
+
+    # TODO: Any more sophisticated way of modularizing this?
+
+    if not use_hierarchical_sampling:
+
+        def train_one_epoch(
+            cfg,
+            default_scene,
+            renderer,
+            dataset,
+            loader,
+            loss_func,
+            optimizer,
+            scheduler,
+        ) -> Dict[torch.Tensor]:
+            total_loss = 0.0
+
+            for batch in loader:
+                # parse batch
+                pixel_gt, extrinsic = batch
+                pixel_gt = pixel_gt.squeeze()
+                pixel_gt = torch.reshape(pixel_gt, (-1, 3))  # (H, W, 3) -> (H * W, 3)
+                extrinsic = extrinsic.squeeze()
+
+                # initialize gradients
+                optimizer.zero_grad()
+
+                # set the camera
+                renderer.camera = cameras.PerspectiveCamera(
+                    {
+                        "f_x": dataset.focal_length,
+                        "f_y": dataset.focal_length,
+                        "img_width": dataset.img_width,
+                        "img_height": dataset.img_height,
+                    },
+                    extrinsic,
+                    cfg.renderer.t_near,
+                    cfg.renderer.t_far,
+                )
+
+                # forward prop.
+                pred, indices, _ = renderer.render_scene(
+                    default_scene,
+                    num_pixels=cfg.renderer.num_pixels,
+                    num_samples=cfg.renderer.num_samples_coarse,
+                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    device=torch.cuda.current_device(),
+                )
+
+                loss = loss_func(pixel_gt[indices, ...].cuda(), pred)
+                total_loss += loss.item()
+
+                # step
+                loss.backward()
+                optimizer.step()
+                if not scheduler is None:
+                    scheduler.step()
+
+            # compute average loss
+            total_loss /= len(loader)
+
+            return {
+                "total_loss": total_loss,
+            }
+
+        return functools.partial(
+            train_one_epoch,
+            cfg,
+            default_scene,
+            renderer,
+            dataset,
+            loader,
+            loss_func,
+            optimizer,
+            scheduler,
+        )
+    else:
+
+        def train_one_epoch(
+            cfg,
+            default_scene,
+            fine_scene,
+            renderer,
+            dataset,
+            loader,
+            loss_func,
+            optimizer,
+            scheduler,
+        ) -> Dict[torch.Tensor, torch.Tensor, torch.Tensor]:
+            total_loss = 0.0
+            total_default_loss = 0.0
+            total_fine_loss = 0.0
+
+            for batch in loader:
+                # parse batch
+                pixel_gt, extrinsic = batch
+                pixel_gt = pixel_gt.squeeze()
+                pixel_gt = torch.reshape(pixel_gt, (-1, 3))  # (H, W, 3) -> (H * W, 3)
+                extrinsic = extrinsic.squeeze()
+
+                # initialize gradients
+                optimizer.zero_grad()
+
+                # set the camera
+                renderer.camera = cameras.PerspectiveCamera(
+                    {
+                        "f_x": dataset.focal_length,
+                        "f_y": dataset.focal_length,
+                        "img_width": dataset.img_width,
+                        "img_height": dataset.img_height,
+                    },
+                    extrinsic,
+                    cfg.renderer.t_near,
+                    cfg.renderer.t_far,
+                )
+
+                # forward prop. default (coarse) network
+                default_pred, default_indices, default_weights = renderer.render_scene(
+                    default_scene,
+                    num_pixels=cfg.renderer.num_pixels,
+                    num_samples=cfg.renderer.num_samples_coarse,
+                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    device=torch.cuda.current_device(),
+                )
+                loss = loss_func(pixel_gt[default_indices, ...].cuda(), default_pred)
+                total_default_loss += loss.item()
+
+                # forward prop. fine network
+                if not fine_scene is None:
+                    fine_pred, fine_indices, _ = renderer.render_scene(
+                        fine_scene,
+                        num_pixels=cfg.renderer.num_pixels,
+                        num_samples=(
+                            cfg.renderer.num_samples_coarse,
+                            cfg.renderer.num_samples_fine,
+                        ),
+                        project_to_ndc=cfg.renderer.project_to_ndc,
+                        pixel_indices=default_indices,  # sample the ray from the same pixels
+                        weights=default_weights,
+                        device=torch.cuda.current_device(),
+                    )
+                    fine_loss = loss_func(pixel_gt[fine_indices, ...].cuda(), fine_pred)
+                    total_fine_loss += fine_loss.item()
+                    loss += fine_loss
+
+                total_loss += loss.item()
+
+                # step
+                loss.backward()
+                optimizer.step()
+                if not scheduler is None:
+                    scheduler.step()
+
+            # compute average loss
+            total_loss /= len(loader)
+            total_default_loss /= len(loader)
+            total_fine_loss /= len(loader)
+
+            return {
+                "total_loss": total_loss,
+                "total_default_loss": total_default_loss,
+                "total_fine_loss": total_fine_loss,
+            }
+
+        return functools.partial(
+            train_one_epoch,
+            cfg,
+            default_scene,
+            fine_scene,
+            renderer,
+            dataset,
+            loader,
+            loss_func,
+            optimizer,
+            scheduler,
+        )
 
 
 def _build_validation_routine(cfg) -> Callable:

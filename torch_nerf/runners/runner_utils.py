@@ -139,7 +139,7 @@ def init_session(cfg: DictConfig, mode: str) -> Callable:
                         extrinsics=dataset.render_poses,
                         img_res=(dataset.img_height, dataset.img_width),
                         save_dir=save_dir,
-                        num_imgs=3,
+                        num_imgs=1,
                     )
 
     else:  # render
@@ -608,7 +608,7 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.Scene, Optional[scene.Scene
             cfg.signal_encoder.include_input,
         )
 
-        network = network.InstantNeRF(
+        default_network = network.InstantNeRF(
             # compute input feature vector dimension
 
         )

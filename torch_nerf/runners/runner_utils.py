@@ -96,57 +96,71 @@ def init_session(cfg: DictConfig, mode: str) -> Callable:
         renderer,
     )
 
-    # combine all routines into one
-    def run_session():
-        for epoch in tqdm(range(start_epoch, cfg.train_params.optim.num_iter // len(dataset))):
-            # train
-            train_losses = train_one_epoch()
-            for loss_name, value in train_losses.items():
-                writer.add_scalar(f"Train_Loss/{loss_name}", value, epoch)
+    if mode == "train":
 
-            # validate
-            if not validate_one_epoch is None:
-                valid_losses = validate_one_epoch()
-                for loss_name, value in valid_losses.items():
-                    writer.add_scalar(f"Validation_Loss/{loss_name}", value, epoch)
+        def run_session():
+            for epoch in tqdm(range(start_epoch, cfg.train_params.optim.num_iter // len(dataset))):
+                # train
+                train_losses = train_one_epoch()
+                for loss_name, value in train_losses.items():
+                    writer.add_scalar(f"Train_Loss/{loss_name}", value, epoch)
 
-            # visualize
-            if (epoch + 1) % cfg.train_params.log.epoch_btw_vis == 0:
-                save_dir = os.path.join(
-                    log_dir,
-                    f"vis/epoch_{epoch}",
-                )
-                if mode == "train":
-                    num_imgs = 3
-                elif mode == "render":
-                    num_imgs = None
-                else:
-                    raise NotImplementedError()
+                # validate
+                if not validate_one_epoch is None:
+                    valid_losses = validate_one_epoch()
+                    for loss_name, value in valid_losses.items():
+                        writer.add_scalar(f"Validation_Loss/{loss_name}", value, epoch)
 
-                visualize(
-                    intrinsics={
-                        "f_x": dataset.focal_length,
-                        "f_y": dataset.focal_length,
-                        "img_width": dataset.img_width,
-                        "img_height": dataset.img_height,
-                    },
-                    extrinsics=dataset.render_poses,
-                    img_res=(dataset.img_height, dataset.img_width),
-                    save_dir=save_dir,
-                    num_imgs=num_imgs,
-                )
+                # save checkpoint
+                if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:
+                    ckpt_dir = os.path.join(log_dir, "ckpt")
+                    _save_ckpt(
+                        ckpt_dir,
+                        epoch,
+                        default_scene,
+                        fine_scene,
+                        optimizer,
+                        scheduler,
+                    )
 
-            # save checkpoint
-            if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:
-                ckpt_dir = os.path.join(log_dir, "ckpt")
-                _save_ckpt(
-                    ckpt_dir,
-                    epoch,
-                    default_scene,
-                    fine_scene,
-                    optimizer,
-                    scheduler,
-                )
+                # visualize
+                if (epoch + 1) % cfg.train_params.log.epoch_btw_vis == 0:
+                    save_dir = os.path.join(
+                        log_dir,
+                        f"vis/epoch_{epoch}",
+                    )
+                    visualize(
+                        intrinsics={
+                            "f_x": dataset.focal_length,
+                            "f_y": dataset.focal_length,
+                            "img_width": dataset.img_width,
+                            "img_height": dataset.img_height,
+                        },
+                        extrinsics=dataset.render_poses,
+                        img_res=(dataset.img_height, dataset.img_width),
+                        save_dir=save_dir,
+                        num_imgs=3,
+                    )
+
+    else:  # render
+
+        def run_session():
+            save_dir = os.path.join(
+                "render_out",
+                cfg.data.dataset_type,
+                cfg.data.scene_name,
+            )
+            visualize(
+                intrinsics={
+                    "f_x": dataset.focal_length,
+                    "f_y": dataset.focal_length,
+                    "img_width": dataset.img_width,
+                    "img_height": dataset.img_height,
+                },
+                extrinsics=dataset.render_poses,
+                img_res=(dataset.img_height, dataset.img_width),
+                save_dir=save_dir,
+            )
 
     return run_session
 

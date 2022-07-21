@@ -61,6 +61,14 @@ def init_session(cfg: DictConfig) -> Callable:
     # initialize objective function
     loss_func = _init_loss_func(cfg)
 
+    # load if checkpoint exists
+    start_epoch = _load_ckpt(
+        cfg.train_params.ckpt.path,
+        default_scene,
+        fine_scene,
+        optimizer,
+        scheduler,
+    )
 
     # build train, validation, and visualization routine
     # with their parameters binded

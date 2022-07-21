@@ -1,11 +1,14 @@
 """A set of utility functions commonly used in training/testing scripts."""
 
+import functools
 import os
-from typing import Dict, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union
 
+from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
 import torch
 import torch.utils.data as data
+from torch.utils.tensorboard import SummaryWriter
 import torchvision.utils as tvu
 from tqdm import tqdm
 import torch_nerf.src.network as network
@@ -19,9 +22,404 @@ from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 from torch_nerf.src.utils.data.llff_dataset import LLFFDataset
 
 
-def init_cuda(cfg: DictConfig) -> None:
+def init_session(cfg: DictConfig, mode: str) -> Callable:
+    """
+    Initializes the current session and returns its entry point.
+
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup the session.
+        mode (str): A string indicating the type of current session.
+            Can be one of "train", "render".
+
+    Returns:
+        run_session (Callable): A function that serves as the entry point for
+            the current (training, validation, or visualization) session.
+    """
+    if not mode in ("train", "render"):
+        raise ValueError(f"Unsupported mode. Expected one of 'train', 'render'. Got {mode}.")
+
+    # identify log directories
+    log_dir = HydraConfig.get().runtime.output_dir
+    tb_log_dir = os.path.join(log_dir, "tensorboard")
+
+    # initialize Tensorboard writer
+    writer = _init_tensorboard(tb_log_dir)
+
+    # initialize CUDA device
+    _init_cuda(cfg)
+
+    # initialize renderer, data
+    renderer = _init_renderer(cfg)
+    dataset, loader = _init_dataset_and_loader(cfg)
+
+    # initialize scene
+    default_scene, fine_scene = _init_scene_repr(cfg)
+
+    # initialize optimizer and learning rate scheduler
+    optimizer, scheduler = _init_optimizer_and_scheduler(
+        cfg,
+        default_scene,
+        fine_scene=fine_scene,
+    )
+
+    # initialize objective function
+    loss_func = _init_loss_func(cfg)
+
+    # load if checkpoint exists
+    start_epoch = _load_ckpt(
+        cfg.train_params.ckpt.path,
+        default_scene,
+        fine_scene,
+        optimizer,
+        scheduler,
+    )
+
+    # build train, validation, and visualization routine
+    # with their parameters binded
+    train_one_epoch = _build_train_routine(
+        cfg,
+        default_scene,
+        fine_scene,
+        renderer,
+        dataset,
+        loader,
+        loss_func,
+        optimizer,
+        scheduler,
+    )
+    validate_one_epoch = _build_validation_routine(cfg)
+    visualize = _build_visualization_routine(
+        cfg,
+        default_scene,
+        fine_scene,
+        renderer,
+    )
+
+    if mode == "train":
+
+        def run_session():
+            for epoch in tqdm(range(start_epoch, cfg.train_params.optim.num_iter // len(dataset))):
+                # train
+                train_losses = train_one_epoch()
+                for loss_name, value in train_losses.items():
+                    writer.add_scalar(f"Train_Loss/{loss_name}", value, epoch)
+
+                # validate
+                if not validate_one_epoch is None:
+                    valid_losses = validate_one_epoch()
+                    for loss_name, value in valid_losses.items():
+                        writer.add_scalar(f"Validation_Loss/{loss_name}", value, epoch)
+
+                # save checkpoint
+                if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:
+                    ckpt_dir = os.path.join(log_dir, "ckpt")
+                    _save_ckpt(
+                        ckpt_dir,
+                        epoch,
+                        default_scene,
+                        fine_scene,
+                        optimizer,
+                        scheduler,
+                    )
+
+                # visualize
+                if (epoch + 1) % cfg.train_params.log.epoch_btw_vis == 0:
+                    save_dir = os.path.join(
+                        log_dir,
+                        f"vis/epoch_{epoch}",
+                    )
+                    visualize(
+                        intrinsics={
+                            "f_x": dataset.focal_length,
+                            "f_y": dataset.focal_length,
+                            "img_width": dataset.img_width,
+                            "img_height": dataset.img_height,
+                        },
+                        extrinsics=dataset.render_poses,
+                        img_res=(dataset.img_height, dataset.img_width),
+                        save_dir=save_dir,
+                        num_imgs=3,
+                    )
+
+    else:  # render
+
+        def run_session():
+            save_dir = os.path.join(
+                "render_out",
+                cfg.data.dataset_type,
+                cfg.data.scene_name,
+            )
+            visualize(
+                intrinsics={
+                    "f_x": dataset.focal_length,
+                    "f_y": dataset.focal_length,
+                    "img_width": dataset.img_width,
+                    "img_height": dataset.img_height,
+                },
+                extrinsics=dataset.render_poses,
+                img_res=(dataset.img_height, dataset.img_width),
+                save_dir=save_dir,
+            )
+
+    return run_session
+
+
+def _build_train_routine(
+    cfg: DictConfig,
+    default_scene: scene.Scene,
+    fine_scene: scene.Scene,
+    renderer: VolumeRenderer,
+    dataset: data.Dataset,
+    loader: data.DataLoader,
+    loss_func: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    scheduler: object = None,
+) -> Callable:
+    """
+    Builds per epoch training routine.
+
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup scene representation.
+        default_scene (scene.scene): A default scene representation to be optimized.
+        fine_scene (scene.scene): A fine scene representation to be optimized.
+            This representation is only used when hierarchical sampling is used.
+        renderer (VolumeRenderer): Volume renderer used to render the scene.
+        dataset (torch.utils.data.Dataset): Dataset for training data.
+        loader (torch.utils.data.DataLoader): Loader for training data.
+        loss_func (torch.nn.Module): Objective function to be optimized.
+        optimizer (torch.optim.Optimizer): Optimizer.
+        scheduler (torch.optim.lr_scheduler.ExponentialLR): Learning rate scheduler.
+            Set to None by default.
+
+    Returns:
+        train_one_epoch (functools.partial): A function that trains a neural scene representation
+            for one epoch.
+    """
+    # resolve training configuration
+    use_hierarchical_sampling = not fine_scene is None
+
+    # TODO: Any more sophisticated way of modularizing this?
+
+    if not use_hierarchical_sampling:
+
+        def train_one_epoch(
+            cfg,
+            default_scene,
+            renderer,
+            dataset,
+            loader,
+            loss_func,
+            optimizer,
+            scheduler,
+        ) -> Dict[torch.Tensor]:
+            total_loss = 0.0
+
+            for batch in loader:
+                # parse batch
+                pixel_gt, extrinsic = batch
+                pixel_gt = pixel_gt.squeeze()
+                pixel_gt = torch.reshape(pixel_gt, (-1, 3))  # (H, W, 3) -> (H * W, 3)
+                extrinsic = extrinsic.squeeze()
+
+                # initialize gradients
+                optimizer.zero_grad()
+
+                # set the camera
+                renderer.camera = cameras.PerspectiveCamera(
+                    {
+                        "f_x": dataset.focal_length,
+                        "f_y": dataset.focal_length,
+                        "img_width": dataset.img_width,
+                        "img_height": dataset.img_height,
+                    },
+                    extrinsic,
+                    cfg.renderer.t_near,
+                    cfg.renderer.t_far,
+                )
+
+                # forward prop.
+                pred, indices, _ = renderer.render_scene(
+                    default_scene,
+                    num_pixels=cfg.renderer.num_pixels,
+                    num_samples=cfg.renderer.num_samples_coarse,
+                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    device=torch.cuda.current_device(),
+                )
+
+                loss = loss_func(pixel_gt[indices, ...].cuda(), pred)
+                total_loss += loss.item()
+
+                # step
+                loss.backward()
+                optimizer.step()
+                if not scheduler is None:
+                    scheduler.step()
+
+            # compute average loss
+            total_loss /= len(loader)
+
+            return {
+                "total_loss": total_loss,
+            }
+
+        return functools.partial(
+            train_one_epoch,
+            cfg,
+            default_scene,
+            renderer,
+            dataset,
+            loader,
+            loss_func,
+            optimizer,
+            scheduler,
+        )
+    else:
+
+        def train_one_epoch(
+            cfg,
+            default_scene,
+            fine_scene,
+            renderer,
+            dataset,
+            loader,
+            loss_func,
+            optimizer,
+            scheduler,
+        ) -> Dict[str, torch.Tensor]:
+            total_loss = 0.0
+            total_default_loss = 0.0
+            total_fine_loss = 0.0
+
+            for batch in loader:
+                # parse batch
+                pixel_gt, extrinsic = batch
+                pixel_gt = pixel_gt.squeeze()
+                pixel_gt = torch.reshape(pixel_gt, (-1, 3))  # (H, W, 3) -> (H * W, 3)
+                extrinsic = extrinsic.squeeze()
+
+                # initialize gradients
+                optimizer.zero_grad()
+
+                # set the camera
+                renderer.camera = cameras.PerspectiveCamera(
+                    {
+                        "f_x": dataset.focal_length,
+                        "f_y": dataset.focal_length,
+                        "img_width": dataset.img_width,
+                        "img_height": dataset.img_height,
+                    },
+                    extrinsic,
+                    cfg.renderer.t_near,
+                    cfg.renderer.t_far,
+                )
+
+                # forward prop. default (coarse) network
+                default_pred, default_indices, default_weights = renderer.render_scene(
+                    default_scene,
+                    num_pixels=cfg.renderer.num_pixels,
+                    num_samples=cfg.renderer.num_samples_coarse,
+                    project_to_ndc=cfg.renderer.project_to_ndc,
+                    device=torch.cuda.current_device(),
+                )
+                loss = loss_func(pixel_gt[default_indices, ...].cuda(), default_pred)
+                total_default_loss += loss.item()
+
+                # forward prop. fine network
+                if not fine_scene is None:
+                    fine_pred, fine_indices, _ = renderer.render_scene(
+                        fine_scene,
+                        num_pixels=cfg.renderer.num_pixels,
+                        num_samples=(
+                            cfg.renderer.num_samples_coarse,
+                            cfg.renderer.num_samples_fine,
+                        ),
+                        project_to_ndc=cfg.renderer.project_to_ndc,
+                        pixel_indices=default_indices,  # sample the ray from the same pixels
+                        weights=default_weights,
+                        device=torch.cuda.current_device(),
+                    )
+                    fine_loss = loss_func(pixel_gt[fine_indices, ...].cuda(), fine_pred)
+                    total_fine_loss += fine_loss.item()
+                    loss += fine_loss
+
+                total_loss += loss.item()
+
+                # step
+                loss.backward()
+                optimizer.step()
+                if not scheduler is None:
+                    scheduler.step()
+
+            # compute average loss
+            total_loss /= len(loader)
+            total_default_loss /= len(loader)
+            total_fine_loss /= len(loader)
+
+            return {
+                "total_loss": total_loss,
+                "total_default_loss": total_default_loss,
+                "total_fine_loss": total_fine_loss,
+            }
+
+        return functools.partial(
+            train_one_epoch,
+            cfg,
+            default_scene,
+            fine_scene,
+            renderer,
+            dataset,
+            loader,
+            loss_func,
+            optimizer,
+            scheduler,
+        )
+
+
+def _build_validation_routine(cfg) -> Callable:
+    """ """
+    return None
+
+
+def _build_visualization_routine(
+    cfg,
+    default_scene: scene.Scene,
+    fine_scene: scene.Scene,
+    renderer: VolumeRenderer,
+) -> Callable:
+    """
+    Builds per epoch visualization routine.
+
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup scene representation.
+        default_scene (scene.scene): A default scene representation to be optimized.
+        fine_scene (scene.scene): A fine scene representation to be optimized.
+            This representation is only used when hierarchical sampling is used.
+        renderer (VolumeRenderer): Volume renderer used to render the scene.
+
+    Returns:
+        visualize_scene (functools.partial): A function that visualizes a neural scene representation.
+    """
+    visualize_scene = functools.partial(
+        _visualize_scene,
+        cfg,
+        default_scene,
+        fine_scene,
+        renderer,
+    )
+
+    return visualize_scene
+
+
+def _init_cuda(cfg: DictConfig) -> None:
     """
     Checks availability of CUDA devices in the system and set the default device.
+
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to configure CUDA devices.
     """
     if torch.cuda.is_available():
         device_id = cfg.cuda.device_id
@@ -40,7 +438,7 @@ def init_cuda(cfg: DictConfig) -> None:
         print("CUDA is not supported on this system. Using CPU by default.")
 
 
-def init_dataset_and_loader(
+def _init_dataset_and_loader(
     cfg: DictConfig,
 ) -> Tuple[data.Dataset, data.DataLoader]:
     """
@@ -110,7 +508,7 @@ def init_dataset_and_loader(
     return dataset, loader
 
 
-def init_renderer(cfg: DictConfig):
+def _init_renderer(cfg: DictConfig):
     """
     Initializes the renderer for rendering scene representations.
 
@@ -137,7 +535,23 @@ def init_renderer(cfg: DictConfig):
     return renderer
 
 
-def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
+def _init_tensorboard(tb_log_dir: str) -> SummaryWriter:
+    """
+    Initializes tensorboard writer.
+
+    Args:
+        tb_log_dir (str): A directory where Tensorboard logs will be saved.
+
+    Returns:
+        writer (SummaryWriter): A writer (handle) for logging data.
+    """
+    if not os.path.exists(tb_log_dir):
+        os.mkdir(tb_log_dir)
+    writer = SummaryWriter(log_dir=tb_log_dir)
+    return writer
+
+
+def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.Scene, Optional[scene.Scene]]:
     """
     Initializes the scene representation to be trained / tested.
 
@@ -148,16 +562,11 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
             to setup scene representation.
 
     Returns:
-        scenes (Dict): A dictionary containing instances of subclasses of QueryStructBase.
-            It contains two separate scene representations each associated with
-            a key 'coarse' and 'fine', respectively.
+        default_scene (scene.Scene): A scene representation used by default.
+        fine_scene (scene.Scene): An additional scene representation used with
+            hierarchical sampling strategy.
     """
     if cfg.scene.type == "cube":
-        scene_dict = {}
-
-        # =========================================================
-        # initialize 'coarse' scene
-        # =========================================================
         coord_enc = pe.PositionalEncoder(
             cfg.network.pos_dim,
             cfg.signal_encoder.coord_encode_level,
@@ -169,23 +578,18 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
             cfg.signal_encoder.include_input,
         )
 
-        coarse_network = network.NeRF(
+        default_network = network.NeRF(
             coord_enc.out_dim,
             dir_enc.out_dim,
         ).to(cfg.cuda.device_id)
 
-        coarse_scene = scene.PrimitiveCube(
-            coarse_network,
+        default_scene = scene.PrimitiveCube(
+            default_network,
             {"coord_enc": coord_enc, "dir_enc": dir_enc},
         )
 
-        scene_dict["coarse"] = coarse_scene
-        print("Initialized 'coarse' scene.")
-
-        # =========================================================
-        # initialize 'fine' scene
-        # =========================================================
-        if cfg.renderer.num_samples_fine > 0:
+        fine_scene = None
+        if cfg.renderer.num_samples_fine > 0:  # initialize fine scene
             fine_network = network.NeRF(
                 coord_enc.out_dim,
                 dir_enc.out_dim,
@@ -195,18 +599,30 @@ def init_scene_repr(cfg: DictConfig) -> scene.PrimitiveBase:
                 fine_network,
                 {"coord_enc": coord_enc, "dir_enc": dir_enc},
             )
+        return default_scene, fine_scene
+    elif cfg.scene.type == "hash_encoding":
+        """
+        dir_enc = pe.PositionalEncoder(
+            cfg.network.view_dir_dim,
+            cfg.signal_encoder.dir_encode_level,
+            cfg.signal_encoder.include_input,
+        )
 
-            scene_dict["fine"] = fine_scene
-            print("Initialized 'fine' scene.")
-        else:
-            print("Hierarchical sampling disabled. Only 'coarse' scene will be used.")
+        network = network.InstantNeRF(
+            # compute input feature vector dimension
 
-        return scene_dict
+        )
+        """
+        raise NotImplementedError()
     else:
         raise ValueError("Unsupported scene representation.")
 
 
-def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
+def _init_optimizer_and_scheduler(
+    cfg: DictConfig,
+    default_scene: scene.scene,
+    fine_scene: scene.scene = None,
+) -> Tuple[torch.optim.Optimizer, Optional[object]]:
     """
     Initializes the optimizer and learning rate scheduler used for training.
 
@@ -219,19 +635,13 @@ def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
         optimizer ():
         scheduler ():
     """
-    if not "coarse" in scenes.keys():
-        raise ValueError(
-            "At least a coarse representation the scene is required for training. "
-            f"Got a dictionary whose keys are {scenes.keys()}."
-        )
-
     optimizer = None
     scheduler = None
 
     # identify parameters to be optimized
-    params = list(scenes["coarse"].radiance_field.parameters())
-    if "fine" in scenes.keys():
-        params += list(scenes["fine"].radiance_field.parameters())
+    params = list(default_scene.radiance_field.parameters())
+    if not fine_scene is None:
+        params += list(fine_scene.radiance_field.parameters())
 
     # ==============================================================================
     # configure optimizer
@@ -239,12 +649,12 @@ def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
         optimizer = torch.optim.Adam(
             params,
             lr=cfg.train_params.optim.init_lr,
-        )  # TODO: A scene may contain two or more networks!
+        )
     else:
         raise NotImplementedError()
 
     # ==============================================================================
-
+    # configure learning rate scheduler
     if cfg.train_params.optim.scheduler_type == "exp":
         # compute decay rate
         init_lr = cfg.train_params.optim.init_lr
@@ -262,7 +672,7 @@ def init_optimizer_and_scheduler(cfg: DictConfig, scenes):
     return optimizer, scheduler
 
 
-def init_objective_func(cfg: DictConfig) -> torch.nn.Module:
+def _init_loss_func(cfg: DictConfig) -> torch.nn.Module:
     """
     Initializes objective functions used to train neural radiance fields.
 
@@ -280,11 +690,12 @@ def init_objective_func(cfg: DictConfig) -> torch.nn.Module:
         raise ValueError("Unsupported loss configuration.")
 
 
-def save_ckpt(
+def _save_ckpt(
     ckpt_dir: str,
     epoch: int,
-    scenes,
-    optimizer,
+    default_scene: scene.scene,
+    fine_scene: scene.scene,
+    optimizer: torch.optim.Optimizer,
     scheduler,
 ) -> None:
     """
@@ -292,7 +703,8 @@ def save_ckpt(
 
     Args:
         epoch (int):
-        scenes (Dict):
+        default_scene (scene.scene):
+        fine_scene (scene.scene):
         optimizer ():
         scheduler ():
     """
@@ -303,11 +715,16 @@ def save_ckpt(
     ckpt = {
         "epoch": epoch,
         "optimizer_state_dict": optimizer.state_dict(),
-        "scheduler_state_dict": scheduler.state_dict(),
     }
 
-    for scene_type, scene in scenes.items():
-        ckpt[f"scene_{scene_type}"] = scene.radiance_field.state_dict()
+    # save scheduler state
+    if not scheduler is None:
+        ckpt["scheduler_state_dict"] = scheduler.state_dict()
+
+    # save scene(s)
+    ckpt["scene_default"] = default_scene.radiance_field.state_dict()
+    if not fine_scene is None:
+        ckpt["scene_fine"] = fine_scene.radiance_field.state_dict()
 
     torch.save(
         ckpt,
@@ -315,19 +732,21 @@ def save_ckpt(
     )
 
 
-def load_ckpt(
+def _load_ckpt(
     ckpt_file,
-    scenes,
-    optimizer,
-    scheduler=None,
+    default_scene: scene.scene,
+    fine_scene: scene.scene,
+    optimizer: torch.optim.Optimizer,
+    scheduler: object = None,
 ) -> int:
     """
     Loads the checkpoint.
 
     Args:
         ckpt_file (str): A path to the checkpoint file.
-        scenes ():
-        optimizer ():
+        default_scene (scene.scene):
+        fine_scene (scene.scene):
+        optimizer (torch.optim.Optimizer):
         scheduler ():
 
     Returns:
@@ -344,10 +763,12 @@ def load_ckpt(
     # load epoch
     epoch = ckpt["epoch"]
 
-    # load scene
-    for scene_type, scene in scenes.items():
-        scene.radiance_field.load_state_dict(ckpt[f"scene_{scene_type}"])
-        scene.radiance_field.to(torch.cuda.current_device())
+    # load scene(s)
+    default_scene.radiance_field.load_state_dict(ckpt["scene_default"])
+    default_scene.radiance_field.to(torch.cuda.current_device())
+    if not fine_scene is None:
+        fine_scene.radiance_field.load_state_dict(ckpt["scene_fine"])
+        fine_scene.radiance_field.to(torch.cuda.current_device())
 
     # load optimizer and scheduler states
     if not optimizer is None:
@@ -359,10 +780,11 @@ def load_ckpt(
     return epoch
 
 
-def visualize_scene(
+def _visualize_scene(
     cfg,
-    scenes,
-    renderer,
+    default_scene: scene.Scene,
+    fine_scene: scene.Scene,
+    renderer: VolumeRenderer,
     intrinsics: Union[Dict, torch.Tensor],
     extrinsics: torch.Tensor,
     img_res: Tuple[int, int],
@@ -414,22 +836,22 @@ def visualize_scene(
             num_total_pixel = img_height * img_width
 
             # render coarse scene first
-            pixel_pred, coarse_indices, coarse_weights = renderer.render_scene(
-                scenes["coarse"],
+            pixel_pred, default_indices, default_weights = renderer.render_scene(
+                default_scene,
                 num_pixels=num_total_pixel,
                 num_samples=cfg.renderer.num_samples_coarse,
                 project_to_ndc=cfg.renderer.project_to_ndc,
                 device=torch.cuda.current_device(),
                 num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
             )
-            if "fine" in scenes.keys():  # visualize "fine" scene
+            if not fine_scene is None:  # visualize "fine" scene
                 pixel_pred, _, _ = renderer.render_scene(
-                    scenes["fine"],
+                    fine_scene,
                     num_pixels=num_total_pixel,
                     num_samples=(cfg.renderer.num_samples_coarse, cfg.renderer.num_samples_fine),
                     project_to_ndc=cfg.renderer.project_to_ndc,
-                    pixel_indices=coarse_indices,
-                    weights=coarse_weights,
+                    pixel_indices=default_indices,
+                    weights=default_weights,
                     device=torch.cuda.current_device(),
                     num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
                 )

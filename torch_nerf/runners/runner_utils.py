@@ -1,5 +1,6 @@
 """A set of utility functions commonly used in training/testing scripts."""
 
+import functools
 import os
 from typing import Callable, Dict, Optional, Tuple, Union
 
@@ -59,6 +60,35 @@ def init_session(cfg: DictConfig) -> Callable:
 
     # initialize objective function
     loss_func = _init_loss_func(cfg)
+
+
+    # build train, validation, and visualization routine
+    # with their parameters binded
+    train_one_epoch = _build_train_routine(cfg)
+    validate_one_epoch = _build_validation_routine(cfg)
+    vis_one_epoch = _build_visualization_routine(cfg)
+
+def _build_train_routine(cfg) -> Callable:
+    """ """
+
+    def a(p):
+        return p + 1
+
+    return functools.partial(a, 1)
+
+
+def _build_validation_routine(cfg) -> Callable:
+    """ """
+    return None
+
+
+def _build_visualization_routine(cfg) -> Callable:
+    """ """
+
+    def a(p):
+        return p + 1
+
+    return functools.partial(a, 1)
 
 
 def _init_cuda(cfg: DictConfig) -> None:

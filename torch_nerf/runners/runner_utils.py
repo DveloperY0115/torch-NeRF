@@ -180,7 +180,8 @@ def _build_train_routine(
             Set to None by default.
 
     Returns:
-        train_one_epoch (Callable):
+        train_one_epoch (functools.partial): A function that trains a neural scene representation
+            for one epoch.
     """
     # resolve training configuration
     use_hierarchical_sampling = not fine_scene is None
@@ -385,7 +386,7 @@ def _build_visualization_routine(
         renderer (VolumeRenderer): Volume renderer used to render the scene.
 
     Returns:
-        visualize_scene (Callable):
+        visualize_scene (functools.partial): A function that visualizes a neural scene representation.
     """
     visualize_scene = functools.partial(
         _visualize_scene,

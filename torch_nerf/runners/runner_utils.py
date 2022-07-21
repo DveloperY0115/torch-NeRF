@@ -22,18 +22,23 @@ from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 from torch_nerf.src.utils.data.llff_dataset import LLFFDataset
 
 
-def init_session(cfg: DictConfig) -> Callable:
+def init_session(cfg: DictConfig, mode: str) -> Callable:
     """
     Initializes the current session and returns its entry point.
 
     Args:
         cfg (DictConfig): A config object holding parameters required
             to setup the session.
+        mode (str): A string indicating the type of current session.
+            Can be one of "train", "render".
 
     Returns:
         run_session (Callable): A function that serves as the entry point for
             the current (training, validation, or visualization) session.
     """
+    if not mode in ("train", "render"):
+        raise ValueError(f"Unsupported mode. Expected one of 'train', 'render'. Got {mode}.")
+
     # identify log directories
     log_dir = HydraConfig.get().runtime.output_dir
     tb_log_dir = os.path.join(log_dir, "tensorboard")
@@ -84,7 +89,12 @@ def init_session(cfg: DictConfig) -> Callable:
         scheduler,
     )
     validate_one_epoch = _build_validation_routine(cfg)
-    vis_one_epoch = _build_visualization_routine(cfg)
+    visualize = _build_visualization_routine(
+        cfg,
+        default_scene,
+        fine_scene,
+        renderer,
+    )
 
     # combine all routines into one
     def run_session():
@@ -94,7 +104,6 @@ def init_session(cfg: DictConfig) -> Callable:
             for loss_name, value in train_losses.items():
                 writer.add_scalar(f"Train_Loss/{loss_name}", value, epoch)
 
-            """
             # validate
             if not validate_one_epoch is None:
                 valid_losses = validate_one_epoch()
@@ -107,8 +116,26 @@ def init_session(cfg: DictConfig) -> Callable:
                     log_dir,
                     f"vis/epoch_{epoch}",
                 )
-                vis_one_epoch(save_dir)
-            """
+                if mode == "train":
+                    num_imgs = 3
+                elif mode == "render":
+                    num_imgs = None
+                else:
+                    raise NotImplementedError()
+
+                visualize(
+                    intrinsics={
+                        "f_x": dataset.focal_length,
+                        "f_y": dataset.focal_length,
+                        "img_width": dataset.img_width,
+                        "img_height": dataset.img_height,
+                    },
+                    extrinsics=dataset.render_poses,
+                    img_res=(dataset.img_height, dataset.img_width),
+                    save_dir=save_dir,
+                    num_imgs=num_imgs,
+                )
+
             # save checkpoint
             if (epoch + 1) % cfg.train_params.log.epoch_btw_ckpt == 0:
                 ckpt_dir = os.path.join(log_dir, "ckpt")
@@ -340,13 +367,35 @@ def _build_validation_routine(cfg) -> Callable:
     return None
 
 
-def _build_visualization_routine(cfg) -> Callable:
-    """ """
+def _build_visualization_routine(
+    cfg,
+    default_scene: scene.Scene,
+    fine_scene: scene.Scene,
+    renderer: VolumeRenderer,
+) -> Callable:
+    """
+    Builds per epoch visualization routine.
 
-    def a(p):
-        return p + 1
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to setup scene representation.
+        default_scene (scene.scene): A default scene representation to be optimized.
+        fine_scene (scene.scene): A fine scene representation to be optimized.
+            This representation is only used when hierarchical sampling is used.
+        renderer (VolumeRenderer): Volume renderer used to render the scene.
 
-    return functools.partial(a, 1)
+    Returns:
+        visualize_scene (Callable):
+    """
+    visualize_scene = functools.partial(
+        _visualize_scene,
+        cfg,
+        default_scene,
+        fine_scene,
+        renderer,
+    )
+
+    return visualize_scene
 
 
 def _init_cuda(cfg: DictConfig) -> None:
@@ -772,22 +821,22 @@ def _visualize_scene(
             num_total_pixel = img_height * img_width
 
             # render coarse scene first
-            pixel_pred, coarse_indices, coarse_weights = renderer.render_scene(
-                scenes["coarse"],
+            pixel_pred, default_indices, default_weights = renderer.render_scene(
+                default_scene,
                 num_pixels=num_total_pixel,
                 num_samples=cfg.renderer.num_samples_coarse,
                 project_to_ndc=cfg.renderer.project_to_ndc,
                 device=torch.cuda.current_device(),
                 num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
             )
-            if "fine" in scenes.keys():  # visualize "fine" scene
+            if not fine_scene is None:  # visualize "fine" scene
                 pixel_pred, _, _ = renderer.render_scene(
-                    scenes["fine"],
+                    fine_scene,
                     num_pixels=num_total_pixel,
                     num_samples=(cfg.renderer.num_samples_coarse, cfg.renderer.num_samples_fine),
                     project_to_ndc=cfg.renderer.project_to_ndc,
-                    pixel_indices=coarse_indices,
-                    weights=coarse_weights,
+                    pixel_indices=default_indices,
+                    weights=default_weights,
                     device=torch.cuda.current_device(),
                     num_ray_batch=num_total_pixel // cfg.renderer.num_pixels,
                 )

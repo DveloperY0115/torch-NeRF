@@ -3,7 +3,7 @@ An implementation of multi-resolution hash encoding presented in
 "Instant Neural Graphics Primitives with a Multiresolution Hash Encoding (SIGGRAPH 2022)".
 """
 
-from typing import Tuple, Optional
+from typing import Dict, Tuple, Optional
 
 import torch
 from torch_nerf.src.scene.primitives.primitive_base import PrimitiveBase
@@ -259,7 +259,7 @@ class PrimitiveHashEncoding(PrimitiveBase):
         feat_dim: int,
         min_res: int,
         max_res: int,
-        view_dir_encoder: Optional[SignalEncoderBase] = None,
+        encoders: Optional[Dict[str, SignalEncoderBase]] = None,
     ):
         """
         Constructor for 'PrimitiveHashTable'.
@@ -272,14 +272,13 @@ class PrimitiveHashEncoding(PrimitiveBase):
             min_res (int): The coarest voxel grid resolution.
             max_res (int): The finest voxel grid resolution.
         """
-        super().__init__()
+        super().__init__(encoders=encoders)
 
         if not isinstance(radiance_field, torch.nn.Module):
             raise ValueError(
                 f"Expected a parameter of type torch.nn.Module. Got {type(radiance_field)}."
             )
         self._radiance_field = radiance_field
-        self._view_dir_encoder = view_dir_encoder
 
         # construct multi-resolution hash table
         self._hash_talbe = MultiResHashTable(
@@ -312,8 +311,8 @@ class PrimitiveHashEncoding(PrimitiveBase):
         """
         num_ray, num_sample = super().query_points(pos, view_dir)
 
-        if not self._view_dir_encoder is None:  # encode view direction vectors
-            view_dir = self._view_dir_encoder.encode(view_dir)
+        if not self.encoders is None:
+            view_dir = self.encoders["dir_enc"].encode(view_dir)
 
         features = self._hash_talbe.query_table(pos.reshape(num_ray * num_sample, -1))
 

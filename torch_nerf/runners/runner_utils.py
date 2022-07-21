@@ -126,8 +126,8 @@ def init_session(cfg: DictConfig) -> Callable:
 
 def _build_train_routine(
     cfg: DictConfig,
-    default_scene: scene.scene,
-    fine_scene: scene.scene,
+    default_scene: scene.Scene,
+    fine_scene: scene.Scene,
     renderer: VolumeRenderer,
     dataset: data.Dataset,
     loader: data.DataLoader,
@@ -245,7 +245,7 @@ def _build_train_routine(
             loss_func,
             optimizer,
             scheduler,
-        ) -> Dict[torch.Tensor, torch.Tensor, torch.Tensor]:
+        ) -> Dict[str, torch.Tensor]:
             total_loss = 0.0
             total_default_loss = 0.0
             total_fine_loss = 0.0
@@ -487,7 +487,7 @@ def _init_tensorboard(tb_log_dir: str) -> SummaryWriter:
     return writer
 
 
-def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.PrimitiveBase, Optional[scene.PrimitiveBase]]:
+def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.Scene, Optional[scene.Scene]]:
     """
     Initializes the scene representation to be trained / tested.
 
@@ -498,8 +498,8 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.PrimitiveBase, Optional[sce
             to setup scene representation.
 
     Returns:
-        default_scene (scene.scene): A scene representation used by default.
-        fine_scene (scene.scene): An additional scene representation used with
+        default_scene (scene.Scene): A scene representation used by default.
+        fine_scene (scene.Scene): An additional scene representation used with
             hierarchical sampling strategy.
     """
     if cfg.scene.type == "cube":
@@ -558,7 +558,7 @@ def _init_optimizer_and_scheduler(
     cfg: DictConfig,
     default_scene: scene.scene,
     fine_scene: scene.scene = None,
-) -> Tuple[torch.optim.Optimizer, Optional[torch.optim.lr_scheduler.lr_scheduler]]:
+) -> Tuple[torch.optim.Optimizer, Optional[object]]:
     """
     Initializes the optimizer and learning rate scheduler used for training.
 
@@ -575,7 +575,7 @@ def _init_optimizer_and_scheduler(
     scheduler = None
 
     # identify parameters to be optimized
-    params = default_scene.radiance_field.parameters()
+    params = list(default_scene.radiance_field.parameters())
     if not fine_scene is None:
         params += list(fine_scene.radiance_field.parameters())
 
@@ -585,7 +585,7 @@ def _init_optimizer_and_scheduler(
         optimizer = torch.optim.Adam(
             params,
             lr=cfg.train_params.optim.init_lr,
-        )  # TODO: A scene may contain two or more networks!
+        )
     else:
         raise NotImplementedError()
 
@@ -718,8 +718,9 @@ def _load_ckpt(
 
 def _visualize_scene(
     cfg,
-    scenes,
-    renderer,
+    default_scene: scene.Scene,
+    fine_scene: scene.Scene,
+    renderer: VolumeRenderer,
     intrinsics: Union[Dict, torch.Tensor],
     extrinsics: torch.Tensor,
     img_res: Tuple[int, int],

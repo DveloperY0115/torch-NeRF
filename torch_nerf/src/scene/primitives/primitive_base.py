@@ -3,6 +3,7 @@ Base class for scene primitives.
 """
 
 from typing import Dict, Optional, Tuple
+import warnings
 
 import torch
 from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
@@ -21,11 +22,9 @@ class PrimitiveBase(object):
             if not isinstance(encoders, dict):
                 raise ValueError(f"Expected a parameter of type Dict. Got {type(encoders)}")
             if not "coord_enc" in encoders.keys():
-                raise ValueError(
-                    f"Missing required encoder type 'coord_enc'. Got {encoders.keys()}."
-                )
+                warnings.warn(f"Missing an encoder type 'coord_enc'. Got {encoders.keys()}.")
             if not "dir_enc" in encoders.keys():
-                raise ValueError(f"Missing required encoder type 'dir_enc'. Got {encoders.keys()}.")
+                warnings.warn(f"Missing an encoder type 'dir_enc'. Got {encoders.keys()}.")
         self._encoders = encoders
 
     def query_points(

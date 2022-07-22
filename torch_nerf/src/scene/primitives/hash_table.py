@@ -63,7 +63,8 @@ class MultiResHashTable:
 
     Attributes:
         num_level (int): Number of grid resolution levels.
-        max_entry_per_level (int): Number of entries in the hash table for each resolution level.
+        log_max_entry_per_level (int): Number of entries in the hash table
+            for each resolution level in log (base 2) scale.
         feat_dim (int): Dimensionality of feature vectors.
         min_res (int): The coarest voxel grid resolution.
         max_res (int): The finest voxel grid resolution.
@@ -72,7 +73,7 @@ class MultiResHashTable:
     def __init__(
         self,
         num_level: int,
-        max_entry_per_level: int,
+        log_max_entry_per_level: int,
         feat_dim: int,
         min_res: int,
         max_res: int,
@@ -87,11 +88,11 @@ class MultiResHashTable:
             min_res (int): The coarest voxel grid resolution.
             max_res (int): The finest voxel grid resolution.
         """
-        self._num_level = num_level
-        self._max_entry_per_level = max_entry_per_level
-        self._feat_dim = feat_dim
-        self._min_res = min_res
-        self._max_res = max_res
+        self._num_level = int(num_level)
+        self._max_entry_per_level = int(2**log_max_entry_per_level)
+        self._feat_dim = int(feat_dim)
+        self._min_res = int(min_res)
+        self._max_res = int(max_res)
 
         # initialize the table entries
         self._tables = 2 * (10**-4) * torch.rand(
@@ -100,6 +101,7 @@ class MultiResHashTable:
                 self._max_entry_per_level,
                 self._feat_dim,
             ),
+            dtype=torch.half,
             requires_grad=True,
         ) - (10**-4)
 

@@ -1,6 +1,6 @@
 type: hash_encoding
 num_level: 16
-max_entry_per_level: 2 ** 19
+log_max_entry_per_level: 19
 feat_dim: 2
 min_res: 16
 max_res: 4096  # this number is arbitrary

@@ -3,6 +3,7 @@
 import functools
 import os
 from typing import Callable, Dict, Optional, Tuple, Union
+import warnings
 
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
@@ -213,7 +214,7 @@ def _build_train_routine(
             loss_func,
             optimizer,
             scheduler,
-        ) -> Dict[torch.Tensor]:
+        ) -> Dict[str, torch.Tensor]:
             total_loss = 0.0
 
             for batch in loader:
@@ -601,7 +602,6 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.Scene, Optional[scene.Scene
             )
         return default_scene, fine_scene
     elif cfg.scene.type == "hash_encoding":
-        """
         dir_enc = pe.PositionalEncoder(
             cfg.network.view_dir_dim,
             cfg.signal_encoder.dir_encode_level,
@@ -610,10 +610,26 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.Scene, Optional[scene.Scene
 
         default_network = network.InstantNeRF(
             # compute input feature vector dimension
-
+            cfg.scene.feat_dim * cfg.scene.num_level,
+            dir_enc.out_dim,
         )
-        """
-        raise NotImplementedError()
+
+        default_scene = scene.PrimitiveHashEncoding(
+            default_network,
+            cfg.scene.num_level,
+            cfg.scene.log_max_entry_per_level,
+            cfg.scene.feat_dim,
+            cfg.scene.min_res,
+            cfg.scene.max_res,
+        )
+
+        fine_scene = None
+        if cfg.renderer.num_samples_fine > 0:
+            warnings.warn(
+                "Hierarchical sampling is unsupported with multi-resolution hash encoding."
+            )
+
+        return default_scene, fine_scene
     else:
         raise ValueError("Unsupported scene representation.")
 

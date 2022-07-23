@@ -7,6 +7,6 @@ optim:
   eps: 1e-15
 log:
   epoch_btw_ckpt: 500
-  epoch_btw_vis: 1
+  epoch_btw_vis: 10
 ckpt:
   path: null

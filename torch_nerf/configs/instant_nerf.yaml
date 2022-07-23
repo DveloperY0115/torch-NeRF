@@ -3,11 +3,11 @@ defaults:
   - data: nerf_synthetic
   - network: instant_nerf
   - objective: nerf
-  - train_params: nerf
+  - train_params: instant_nerf
   - scene: cube
   - renderer: volume_renderer_default
   - signal_encoder: positional_encoding
 
 renderer:
   num_samples_coarse: 64
-  num_samples_fine: 128
+  num_samples_fine: 64

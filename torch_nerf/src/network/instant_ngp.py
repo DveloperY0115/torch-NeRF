@@ -347,7 +347,7 @@ class MultiResHashTable(nn.Module):
                 self._max_entry_per_level,
                 self._feat_dim,
             ),
-            dtype=torch.half,
+            # TODO: enable half precision training
             requires_grad=True,
         ) - (10**-4)
         self.register_parameter("tables", nn.Parameter(tables))

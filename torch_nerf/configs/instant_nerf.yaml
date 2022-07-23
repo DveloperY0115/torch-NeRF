@@ -4,6 +4,6 @@ defaults:
   - network: instant_nerf
   - objective: nerf
   - train_params: nerf
-  - scene: multires_hash
+  - scene: cube
   - renderer: volume_renderer_default
   - signal_encoder: positional_encoding

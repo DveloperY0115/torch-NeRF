@@ -3,7 +3,6 @@
 import functools
 import os
 from typing import Callable, Dict, Optional, Tuple, Union
-import warnings
 
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig
@@ -18,7 +17,7 @@ import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.src.renderer.integrators.quadrature_integrator as integrators
 import torch_nerf.src.renderer.ray_samplers as ray_samplers
 from torch_nerf.src.renderer.volume_renderer import VolumeRenderer
-import torch_nerf.src.signal_encoder.positional_encoder as pe
+from torch_nerf.src.signal_encoder import PositionalEncoder, SHEncoder
 from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 from torch_nerf.src.utils.data.llff_dataset import LLFFDataset
 
@@ -567,22 +566,33 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.Scene, Optional[scene.Scene
         fine_scene (scene.Scene): An additional scene representation used with
             hierarchical sampling strategy.
     """
-    if cfg.scene.type == "cube":
-        coord_enc = pe.PositionalEncoder(
+    if cfg.signal_encoder.type == "pe":
+        coord_enc = PositionalEncoder(
             cfg.network.pos_dim,
             cfg.signal_encoder.coord_encode_level,
             cfg.signal_encoder.include_input,
         )
-        dir_enc = pe.PositionalEncoder(
+        dir_enc = PositionalEncoder(
             cfg.network.view_dir_dim,
             cfg.signal_encoder.dir_encode_level,
             cfg.signal_encoder.include_input,
         )
-        encoders = {
-            "coord_enc": coord_enc,
-            "dir_enc": dir_enc,
-        }
-
+    elif cfg.signal_encoder.type == "sh":
+        coord_enc = SHEncoder(
+            cfg.network.pos_dim,
+            cfg.signal_encoder.degree,
+        )
+        dir_enc = SHEncoder(
+            cfg.network.view_dir_dim,
+            cfg.signal_encoder.degree,
+        )
+    else:
+        raise NotImplementedError()
+    encoders = {
+        "coord_enc": coord_enc,
+        "dir_enc": dir_enc,
+    }
+    if cfg.scene.type == "cube":
         if cfg.network.type == "nerf":
             default_network = network.NeRF(
                 coord_enc.out_dim,

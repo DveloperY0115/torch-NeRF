@@ -59,8 +59,10 @@ class PrimitiveCube(PrimitiveBase):
         num_ray, num_sample = super().query_points(pos, view_dir)
 
         if not self.encoders is None:  # encode input signals
-            pos = self.encoders["coord_enc"].encode(pos)
-            view_dir = self.encoders["dir_enc"].encode(view_dir)
+            if "coord_enc" in self.encoders.keys():
+                pos = self.encoders["coord_enc"].encode(pos)
+            if "dir_enc" in self.encoders.keys():
+                view_dir = self.encoders["dir_enc"].encode(view_dir)
 
         sigma, radiance = self._radiance_field(
             pos.reshape(num_ray * num_sample, -1),

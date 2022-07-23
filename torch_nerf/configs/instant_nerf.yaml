@@ -7,3 +7,6 @@ defaults:
   - scene: cube
   - renderer: volume_renderer_default
   - signal_encoder: positional_encoding
+
+renderer:
+  num_samples_fine: 0  # InstantNeRF does not require hierarchical sampling

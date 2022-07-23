@@ -4,7 +4,7 @@ optim:
   scheduler_type: exp
   init_lr: 0.0005
   end_lr: 0.00005
-  eps: 1e-8
+  eps: 1e-15
 log:
   epoch_btw_ckpt: 500
   epoch_btw_vis: 50

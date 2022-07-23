@@ -666,6 +666,7 @@ def _init_optimizer_and_scheduler(
         optimizer = torch.optim.Adam(
             params,
             lr=cfg.train_params.optim.init_lr,
+            eps=cfg.train_params.optim.eps,
         )
     else:
         raise NotImplementedError()

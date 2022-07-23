@@ -6,7 +6,7 @@ defaults:
   - train_params: instant_nerf
   - scene: cube
   - renderer: volume_renderer_default
-  - signal_encoder: positional_encoding
+  - signal_encoder: spherical_harmonics
 
 renderer:
   num_samples_coarse: 64

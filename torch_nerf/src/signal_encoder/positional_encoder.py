@@ -6,8 +6,10 @@ Source: https://github.com/yenchenlin/nerf-pytorch/blob/master/run_nerf_helpers.
 
 import torch
 
+from torch_nerf.src.signal_encoder.signal_encoder_base import SignalEncoderBase
 
-class PositionalEncoder(object):
+
+class PositionalEncoder(SignalEncoderBase):
     """
     Implementation of positional encoding.
 

@@ -5,4 +5,4 @@ num_level: 16
 log_max_entry_per_level: 19
 table_feat_dim: 2
 min_res: 16
-max_res: 4096  # this number is arbitrary
+max_res: 8192  # this number is arbitrary

@@ -96,7 +96,8 @@ class SHEncoder(SignalEncoderBase):
                 The embedding of the input signal.
         """
         encoded_signal = torch.empty(
-            (in_signal.shape[0], self._out_dim), dtype=in_signal.get_device()
+            (in_signal.shape[0], self._out_dim),
+            device=in_signal.get_device(),
         )
 
         x, y, z = in_signal.unbind(-1)

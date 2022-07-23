@@ -5,7 +5,7 @@ optim:
   init_lr: 0.0005
   end_lr: 0.00005
 log:
-  epoch_btw_ckpt: 50
+  epoch_btw_ckpt: 500
   epoch_btw_vis: 50
 ckpt:
   path: null

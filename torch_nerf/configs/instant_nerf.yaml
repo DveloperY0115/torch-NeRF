@@ -1,0 +1,14 @@
+defaults:
+  - cuda: default
+  - data: nerf_synthetic
+  - network: instant_nerf
+  - objective: nerf
+  - train_params: instant_nerf
+  - scene: cube
+  - renderer: volume_renderer_default
+  - signal_encoder: spherical_harmonics
+
+renderer:
+  num_pixels: 4096
+  num_samples_coarse: 256
+  num_samples_fine: 0

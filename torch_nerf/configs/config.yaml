@@ -1,9 +1,0 @@
-defaults:
-  - cuda: default
-  - data: nerf_synthetic
-  - network: nerf_mlp
-  - objective: nerf_default
-  - train_params: nerf
-  - scene: nerf_bounded
-  - renderer: default
-  - signal_encoder: pe

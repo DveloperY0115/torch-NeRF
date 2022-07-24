@@ -1,0 +1,9 @@
+defaults:
+  - cuda: default
+  - data: nerf_synthetic
+  - network: nerf
+  - objective: nerf
+  - train_params: nerf
+  - scene: cube
+  - renderer: volume_renderer_default
+  - signal_encoder: positional_encoding

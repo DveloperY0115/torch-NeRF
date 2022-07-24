@@ -2,11 +2,11 @@ optim:
   num_iter: 300000
   optim_type: adam
   scheduler_type: exp
-  init_lr: 0.0005
-  end_lr: 0.00005
-  eps: 1e-8
+  init_lr: 1e-2
+  end_lr: 1e-3
+  eps: 1e-15
 log:
   epoch_btw_ckpt: 500
-  epoch_btw_vis: 50
+  epoch_btw_vis: 10
 ckpt:
   path: null

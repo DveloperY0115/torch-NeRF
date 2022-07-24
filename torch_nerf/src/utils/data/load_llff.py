@@ -517,8 +517,6 @@ def load_llff_data(
         extrinsics, render_poses, z_bounds = spherify_poses(extrinsics, z_bounds)
     else:
         avg_camera_to_world = poses_avg(extrinsics)
-        print("recentered", avg_camera_to_world.shape)
-        print(avg_camera_to_world)
 
         ## Get spiral
         # Get average pose
@@ -561,8 +559,7 @@ def load_llff_data(
     render_poses = np.array(render_poses).astype(np.float32)
 
     avg_camera_to_world = poses_avg(extrinsics)
-    print(f"Data: {imgs.shape}, {extrinsics.shape}, {intrinsics.shape}, {z_bounds.shape}")
-
+    
     dists = np.sum(np.square(avg_camera_to_world[:3, 3] - extrinsics[:, :3, 3]), -1)
     i_test = int(np.argmin(dists))
     print("HOLDOUT view is", i_test)

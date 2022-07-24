@@ -1,3 +1,4 @@
+type: pe
 coord_encode_level: 10
 dir_encode_level: 4
 include_input: true

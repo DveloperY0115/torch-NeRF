@@ -14,7 +14,7 @@ import torch_nerf.runners.runner_utils as runner_utils
 @hydra.main(
     version_base=None,
     config_path="../configs",  # config file search path is relative to this script
-    config_name="config",
+    config_name="default",
 )
 def main(cfg: DictConfig) -> None:
     """The entry point of training code."""

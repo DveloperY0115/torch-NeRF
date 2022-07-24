@@ -17,7 +17,7 @@ import torch_nerf.src.renderer.cameras as cameras
 import torch_nerf.src.renderer.integrators.quadrature_integrator as integrators
 import torch_nerf.src.renderer.ray_samplers as ray_samplers
 from torch_nerf.src.renderer.volume_renderer import VolumeRenderer
-import torch_nerf.src.signal_encoder.positional_encoder as pe
+from torch_nerf.src.signal_encoder import PositionalEncoder, SHEncoder
 from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
 from torch_nerf.src.utils.data.llff_dataset import LLFFDataset
 
@@ -139,7 +139,7 @@ def init_session(cfg: DictConfig, mode: str) -> Callable:
                         extrinsics=dataset.render_poses,
                         img_res=(dataset.img_height, dataset.img_width),
                         save_dir=save_dir,
-                        num_imgs=3,
+                        num_imgs=1,
                     )
 
     else:  # render
@@ -213,7 +213,7 @@ def _build_train_routine(
             loss_func,
             optimizer,
             scheduler,
-        ) -> Dict[torch.Tensor]:
+        ) -> Dict[str, torch.Tensor]:
             total_loss = 0.0
 
             for batch in loader:
@@ -566,54 +566,81 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.Scene, Optional[scene.Scene
         fine_scene (scene.Scene): An additional scene representation used with
             hierarchical sampling strategy.
     """
-    if cfg.scene.type == "cube":
-        coord_enc = pe.PositionalEncoder(
+    if cfg.signal_encoder.type == "pe":
+        coord_enc = PositionalEncoder(
             cfg.network.pos_dim,
             cfg.signal_encoder.coord_encode_level,
             cfg.signal_encoder.include_input,
         )
-        dir_enc = pe.PositionalEncoder(
+        dir_enc = PositionalEncoder(
             cfg.network.view_dir_dim,
             cfg.signal_encoder.dir_encode_level,
             cfg.signal_encoder.include_input,
         )
-
-        default_network = network.NeRF(
-            coord_enc.out_dim,
-            dir_enc.out_dim,
-        ).to(cfg.cuda.device_id)
+    elif cfg.signal_encoder.type == "sh":
+        coord_enc = SHEncoder(
+            cfg.network.pos_dim,
+            cfg.signal_encoder.degree,
+        )
+        dir_enc = SHEncoder(
+            cfg.network.view_dir_dim,
+            cfg.signal_encoder.degree,
+        )
+    else:
+        raise NotImplementedError()
+    encoders = {
+        "coord_enc": coord_enc,
+        "dir_enc": dir_enc,
+    }
+    if cfg.scene.type == "cube":
+        if cfg.network.type == "nerf":
+            default_network = network.NeRF(
+                coord_enc.out_dim,
+                dir_enc.out_dim,
+            ).to(cfg.cuda.device_id)
+        elif cfg.network.type == "instant_nerf":
+            default_network = network.InstantNeRF(
+                cfg.network.pos_dim,
+                dir_enc.out_dim,
+                cfg.network.num_level,
+                cfg.network.log_max_entry_per_level,
+                cfg.network.min_res,
+                cfg.network.max_res,
+                table_feat_dim=cfg.network.table_feat_dim,
+            ).to(cfg.cuda.device_id)
+            encoders.pop("coord_enc", None)
+        else:
+            raise NotImplementedError()
 
         default_scene = scene.PrimitiveCube(
             default_network,
-            {"coord_enc": coord_enc, "dir_enc": dir_enc},
+            encoders,
         )
 
         fine_scene = None
         if cfg.renderer.num_samples_fine > 0:  # initialize fine scene
-            fine_network = network.NeRF(
-                coord_enc.out_dim,
-                dir_enc.out_dim,
-            ).to(cfg.cuda.device_id)
-
+            if cfg.network.type == "nerf":
+                fine_network = network.NeRF(
+                    coord_enc.out_dim,
+                    dir_enc.out_dim,
+                ).to(cfg.cuda.device_id)
+            elif cfg.network.type == "instant_nerf":
+                fine_network = network.InstantNeRF(
+                    cfg.network.pos_dim,
+                    dir_enc.out_dim,
+                    cfg.network.num_level,
+                    cfg.network.log_max_entry_per_level,
+                    cfg.network.min_res,
+                    cfg.network.max_res,
+                    table_feat_dim=cfg.network.table_feat_dim,
+                ).to(cfg.cuda.device_id)
+            else:
+                raise NotImplementedError()
             fine_scene = scene.PrimitiveCube(
                 fine_network,
-                {"coord_enc": coord_enc, "dir_enc": dir_enc},
+                encoders,
             )
         return default_scene, fine_scene
-    elif cfg.scene.type == "hash_encoding":
-        """
-        dir_enc = pe.PositionalEncoder(
-            cfg.network.view_dir_dim,
-            cfg.signal_encoder.dir_encode_level,
-            cfg.signal_encoder.include_input,
-        )
-
-        network = network.InstantNeRF(
-            # compute input feature vector dimension
-
-        )
-        """
-        raise NotImplementedError()
     else:
         raise ValueError("Unsupported scene representation.")
 
@@ -632,7 +659,7 @@ def _init_optimizer_and_scheduler(
         scenes (Dict): A dictionary containing neural scene representation(s).
 
     Returns:
-        optimizer ():
+        optimizer (torch.optim.Optimizer):
         scheduler ():
     """
     optimizer = None
@@ -649,6 +676,7 @@ def _init_optimizer_and_scheduler(
         optimizer = torch.optim.Adam(
             params,
             lr=cfg.train_params.optim.init_lr,
+            eps=cfg.train_params.optim.eps,
         )
     else:
         raise NotImplementedError()

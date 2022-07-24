@@ -340,15 +340,15 @@ class MultiResHashTable(nn.Module):
         self._max_res = int(max_res)
 
         # initialize the table entries
-        tables = 2 * (10**-4) * torch.rand(
+        tables = torch.empty(
             (
                 self._num_level,
                 self._max_entry_per_level,
                 self._feat_dim,
             ),
-            # TODO: enable half precision training
             requires_grad=True,
-        ) - (10**-4)
+        )
+        nn.init.uniform_(tables, a=-1e-4, b=1e-4)
         self.register_parameter("tables", nn.Parameter(tables))
 
         # initialize the voxel grid resolutions

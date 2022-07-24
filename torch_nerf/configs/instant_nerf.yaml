@@ -9,5 +9,6 @@ defaults:
   - signal_encoder: spherical_harmonics
 
 renderer:
-  num_samples_coarse: 64
-  num_samples_fine: 64
+  num_pixels: 4096
+  num_samples_coarse: 256
+  num_samples_fine: 0

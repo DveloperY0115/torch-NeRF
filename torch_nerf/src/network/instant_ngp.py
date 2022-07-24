@@ -270,7 +270,7 @@ class InstantNeRFMLP(nn.Module):
         if x.shape[-1] != self.in_dim:
             raise ValueError(f"Expected {self.in_dim}-D position vector. Got {x.shape[-1]}.")
 
-        out = self.relu_actvn(self.fc_in(x))
+        out = self.fc_in(x)
 
         for hidden_layer in self.fc_hidden:
             out = self.relu_actvn(hidden_layer(out))

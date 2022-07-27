@@ -8,7 +8,7 @@ Pytorch implementation of **NeRF: Representing Scenes as Neural Radiance Fields 
 |:--:|
 |*NeRF Overview.* Figure from the [project page](https://www.matthewtancik.com/nerf) of NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis, Mildenhall et al., ECCV 2020. |
 
-## Get Started
+## Getting Started
 
 To configure the Python virtual environment and install dependencies, open the shell and run the following commands:
 

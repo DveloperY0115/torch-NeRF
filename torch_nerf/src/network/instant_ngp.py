@@ -145,7 +145,7 @@ class InstantNeRF(nn.Module):
 
         # predict density (sigma)
         density_out = self.density_mlp(table_features)
-        density = 2 ** density_out[..., 0].clone()
+        density = torch.exp(0.5 * density_out[..., 0].clone())
 
         # predict radiance (RGB)
         color = self.color_mlp(torch.cat([density_out, view_dir], dim=-1))

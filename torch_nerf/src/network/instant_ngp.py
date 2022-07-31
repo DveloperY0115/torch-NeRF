@@ -396,7 +396,7 @@ class MultiResHashTable(nn.Module):
         features = []
         for scaled_coord, table in zip(scaled_coords, self.tables):
             floor = torch.floor(scaled_coord)
-            ceil = torch.ceil(scaled_coord)
+            ceil = floor + 1.0
 
             # identify 8 corners of the voxels enclosing queried points
             coord_fff = floor

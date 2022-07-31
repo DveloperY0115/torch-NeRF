@@ -49,8 +49,10 @@ def init_session(cfg: DictConfig, mode: str) -> Callable:
     # initialize CUDA device
     _init_cuda(cfg)
 
-    # initialize renderer, data
+    # initialize renderer
     renderer = _init_renderer(cfg)
+
+    # initialize dataset and loaders
     dataset, loader = _init_dataset_and_loader(cfg)
 
     # initialize scene
@@ -508,13 +510,17 @@ def _init_dataset_and_loader(
     return dataset, loader
 
 
-def _init_renderer(cfg: DictConfig):
+def _init_renderer(cfg: DictConfig) -> VolumeRenderer:
     """
     Initializes the renderer for rendering scene representations.
 
     Args:
         cfg (DictConfig): A config object holding parameters required
             to setup renderer.
+
+    Returns:
+        renderer (VolumeRenderer): A differentiable volume renderer with
+            the specified ray sampler and numerical integrator.
     """
     integrator = None
     sampler = None

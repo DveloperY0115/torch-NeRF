@@ -84,3 +84,8 @@ The rendering script stores rendered images in `render_out` directory under the 
   - **[Variable Bitrate Neural Fields (SIGGRAPH 2022)](https://nv-tlabs.github.io/vqad/)**
   - [Point-NeRF (CVPR 2022)](https://xharlie.github.io/projects/project_sites/pointnerf/index.html)
   - **[TensoRF (ECCV 2022)](https://arxiv.org/abs/2203.09517)**
+
+## Interesting Topics
+- [ARF: Artistic Radiance Fields (ECCV 2022)](https://arxiv.org/abs/2206.06360)
+- [GAUDI: A Neural Architect for Immersive 3D Scene Generation (arXiv 2022)](https://arxiv.org/abs/2207.13751)
+- [Remote Sensing Novel View Synthesis with Implicit Multiplane Representations (arXiv 2022)](https://arxiv.org/abs/2205.08908)

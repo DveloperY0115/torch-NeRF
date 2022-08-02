@@ -603,6 +603,7 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.Scene, Optional[scene.Scene
             default_network = network.NeRF(
                 coord_enc.out_dim,
                 dir_enc.out_dim,
+                cfg.network.use_softplus_actvn,
             ).to(cfg.cuda.device_id)
         elif cfg.network.type == "instant_nerf":
             default_network = network.InstantNeRF(
@@ -642,10 +643,12 @@ def _init_scene_repr(cfg: DictConfig) -> Tuple[scene.Scene, Optional[scene.Scene
                 ).to(cfg.cuda.device_id)
             else:
                 raise NotImplementedError()
+
             fine_scene = scene.PrimitiveCube(
                 fine_network,
                 encoders,
             )
+
         return default_scene, fine_scene
     else:
         raise ValueError("Unsupported scene representation.")

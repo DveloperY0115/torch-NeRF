@@ -1,3 +1,5 @@
 type: nerf
 pos_dim: 3
 view_dir_dim: 3 
+
+use_softplus_actvn: true

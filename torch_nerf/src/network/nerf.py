@@ -26,6 +26,7 @@ class NeRF(nn.Module):
         pos_dim: int,
         view_dir_dim: int,
         feat_dim: int = 256,
+        use_softplus_actvn: bool = True,
     ):
         """
         Constructor of class 'NeRF'.
@@ -35,6 +36,11 @@ class NeRF(nn.Module):
             view_dir_dim (int): Dimensionality of view direction vectors.
             feat_dim (int): Dimensionality of feature vector within forward propagation.
                 Set to 256 by default following the paper.
+            use_softplus_actvn (bool): A flag for using the softplus activation
+                on hidden layers instead of ReLU. Set to True by default.
+                The recent paper, Mip-NeRF (ICCV 2021), reports that the use of softplus
+                as the activation stabilizes the training in early stages. For details, please
+                refer to the section E.2 of its supplementary material.
         """
         super().__init__()
 
@@ -59,7 +65,10 @@ class NeRF(nn.Module):
         self.fc_out = nn.Linear(self._feat_dim // 2, rgb_dim)
 
         # activation layer
-        self.relu_actvn = nn.ReLU()
+        if use_softplus_actvn:  # TODO: Is changing activation really helps?
+            self.hidden_actvn = nn.Softplus()
+        else:
+            self.hidden_actvn = nn.ReLU()
         self.sigmoid_actvn = nn.Sigmoid()
 
     def forward(
@@ -99,23 +108,23 @@ class NeRF(nn.Module):
                 f"Expected {self._view_dir_dim}-D view direction vector. Got {view_dir.shape[-1]}."
             )
 
-        x = self.relu_actvn(self.fc_in(pos))
-        x = self.relu_actvn(self.fc_1(x))
-        x = self.relu_actvn(self.fc_2(x))
-        x = self.relu_actvn(self.fc_3(x))
-        x = self.relu_actvn(self.fc_4(x))
+        x = self.hidden_actvn(self.fc_in(pos))
+        x = self.hidden_actvn(self.fc_1(x))
+        x = self.hidden_actvn(self.fc_2(x))
+        x = self.hidden_actvn(self.fc_3(x))
+        x = self.hidden_actvn(self.fc_4(x))
 
         x = torch.cat([pos, x], dim=-1)
 
-        x = self.relu_actvn(self.fc_5(x))
-        x = self.relu_actvn(self.fc_6(x))
-        x = self.relu_actvn(self.fc_7(x))
+        x = self.hidden_actvn(self.fc_5(x))
+        x = self.hidden_actvn(self.fc_6(x))
+        x = self.hidden_actvn(self.fc_7(x))
         x = self.fc_8(x)
 
-        sigma = self.relu_actvn(x[:, 0])
+        sigma = self.hidden_actvn(x[:, 0])
         x = torch.cat([x[:, 1:], view_dir], dim=-1)
 
-        x = self.relu_actvn(self.fc_9(x))
+        x = self.hidden_actvn(self.fc_9(x))
         rgb = self.sigmoid_actvn(self.fc_out(x))
 
         return sigma, rgb

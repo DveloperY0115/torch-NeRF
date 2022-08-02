@@ -14,7 +14,6 @@ import torch_nerf.runners.runner_utils as runner_utils
 @hydra.main(
     version_base=None,
     config_path="../configs",
-    config_name="default",
 )
 def main(cfg: DictConfig) -> None:
     """The entry point of rendering code."""

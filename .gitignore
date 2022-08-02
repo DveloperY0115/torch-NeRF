@@ -151,3 +151,6 @@ cython_debug/
 
 # Hydra logs
 outputs
+
+# rendering outputs
+render_out

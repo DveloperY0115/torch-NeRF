@@ -89,3 +89,4 @@ The rendering script stores rendered images in `render_out` directory under the 
 - [ARF: Artistic Radiance Fields (ECCV 2022)](https://arxiv.org/abs/2206.06360)
 - [GAUDI: A Neural Architect for Immersive 3D Scene Generation (arXiv 2022)](https://arxiv.org/abs/2207.13751)
 - [Remote Sensing Novel View Synthesis with Implicit Multiplane Representations (arXiv 2022)](https://arxiv.org/abs/2205.08908)
+- [MobileNeRF: Exploiting the Polygon Rasterization Pipeline for Efficient Neural Field Rendering on Mobile Architectures (arXiv 2022)](https://arxiv.org/abs/2208.00277)

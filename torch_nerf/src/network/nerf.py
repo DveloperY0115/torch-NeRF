@@ -26,7 +26,7 @@ class NeRF(nn.Module):
         pos_dim: int,
         view_dir_dim: int,
         feat_dim: int = 256,
-        use_softplus_actvn: bool = True,
+        use_softplus_actvn: bool = False,
     ):
         """
         Constructor of class 'NeRF'.

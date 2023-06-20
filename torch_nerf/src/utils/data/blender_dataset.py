@@ -2,7 +2,7 @@
 blender_dataset.py - Abstraction of 'Blender' dataset.
 """
 
-import os
+from pathlib import Path
 from typing import Tuple
 
 import torch
@@ -48,12 +48,13 @@ class NeRFBlenderDataset(data.Dataset):
             raise ValueError(
                 f"Unsupported scene type. Expected one of {scene_names}. Got {scene_name}."
             )
-        if not os.path.exists(root_dir):
-            raise ValueError(f"The directory {root_dir} does not exist.")
+        if not isinstance(root_dir, Path):
+            root_dir = Path(root_dir)
+        assert root_dir.exists(), f"The directory {root_dir} does not exist."
 
         super().__init__()
 
-        self._root_dir = str(os.path.join(root_dir, scene_name))
+        self._root_dir = root_dir / scene_name
         self._data_type = data_type
         self._white_bg = white_bg
 

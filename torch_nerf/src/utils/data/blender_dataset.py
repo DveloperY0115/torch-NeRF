@@ -62,6 +62,7 @@ class NeRFBlenderDataset(data.Dataset):
             self._poses,
             self._camera_params,
             self._render_poses,
+            self._img_fnames,
         ) = load_blender_data(self._root_dir, self._data_type, half_res=half_res)
 
         self._img_height = self._camera_params[0]

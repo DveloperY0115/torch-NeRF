@@ -156,10 +156,14 @@ def load_blender_data(
     else:
         skip = test_idx_skip
 
+    img_fnames = []
     for frame in meta["frames"][::skip]:
-        fname = os.path.join(base_dir, frame["file_path"] + ".png")
-        imgs.append(imageio.imread(fname))
+        img_fname = os.path.join(base_dir, frame["file_path"] + ".png")
+        img_fname = os.path.abspath(img_fname)
+        
+        imgs.append(imageio.imread(img_fname))
         poses.append(np.array(frame["transform_matrix"]))
+        img_fnames.append(str(img_fname))
     imgs = (np.array(imgs) / 255.0).astype(np.float32)
     poses = np.array(poses).astype(np.float32)
 
@@ -185,4 +189,4 @@ def load_blender_data(
             )
         imgs = imgs_half_res
 
-    return imgs, poses, [img_height, img_width, focal], render_poses
+    return imgs, poses, [img_height, img_width, focal], render_poses, img_fnames

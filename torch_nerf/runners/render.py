@@ -10,6 +10,7 @@ from typing import Dict, Tuple, Union
 import hydra
 from omegaconf import DictConfig, OmegaConf
 import torch
+import torch.utils.data as data
 import torchvision.utils as tvu
 from tqdm import tqdm
 
@@ -25,6 +26,32 @@ from torch_nerf.runners.runner_utils import (
 import torch_nerf.src.scene as scene
 import torch_nerf.src.renderer.cameras as cameras
 from torch_nerf.src.renderer.volume_renderer import VolumeRenderer
+from torch_nerf.src.utils.data.blender_dataset import NeRFBlenderDataset
+from torch_nerf.src.utils.data.llff_dataset import LLFFDataset
+
+
+def init_dataset(cfg: DictConfig) -> data.Dataset:
+    """
+    Initializes the dataset.
+    """
+    dataset_type = str(cfg.data.dataset_type)
+
+    if dataset_type == "nerf_synthetic":
+        dataset = NeRFBlenderDataset(
+            cfg.data.data_root,
+            scene_name=cfg.data.scene_name,
+            data_type="test",
+            half_res=cfg.data.half_res,
+            white_bg=cfg.data.white_bg,
+        )
+    elif dataset_type == "nerf_llff":
+        raise NotImplementedError(f"Unsupported dataset type: {dataset_type}")
+    elif dataset_type == "nerf_deepvoxels":
+        raise NotImplementedError(f"Unsupported dataset type: {dataset_type}")
+    else:
+        raise NotImplementedError(f"Unsupported dataset type: {dataset_type}")
+
+    return dataset
 
 @torch.no_grad()
 def render_scene(
@@ -78,7 +105,6 @@ def render_scene(
     return rendered_img
 
 
-
 @hydra.main(
     version_base=None,
     config_path="../configs",  # config file search path is relative to this script
@@ -105,13 +131,8 @@ def main(cfg: DictConfig) -> None:
     # initialize renderer, data
     renderer = _init_renderer(cfg)
 
-    ####
-    # TODO: initialize dataset
-    if not render_test_views:
-        dataset, _ = _init_dataset_and_loader(cfg)
-    else:
-        raise NotImplementedError()
-    ####
+    # initialize dataset
+    dataset = init_dataset(cfg)
 
     # initialize scene and network parameters
     default_scene, fine_scene = _init_scene_repr(cfg)

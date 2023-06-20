@@ -2,6 +2,7 @@
 
 import functools
 import os
+from pathlib import Path
 from typing import Callable, Dict, Optional, Tuple, Union
 
 from hydra.core.hydra_config import HydraConfig
@@ -68,7 +69,7 @@ def init_session(cfg: DictConfig, mode: str) -> Callable:
 
     # load if checkpoint exists
     start_epoch = _load_ckpt(
-        cfg.train_params.ckpt.path,
+        log_dir / "ckpt",
         default_scene,
         fine_scene,
         optimizer,
@@ -761,7 +762,7 @@ def _save_ckpt(
 
 
 def _load_ckpt(
-    ckpt_file,
+    ckpt_dir: Path,
     default_scene: scene.scene,
     fine_scene: scene.scene,
     optimizer: torch.optim.Optimizer,
@@ -771,7 +772,7 @@ def _load_ckpt(
     Loads the checkpoint.
 
     Args:
-        ckpt_file (str): A path to the checkpoint file.
+        ckpt_dir (Path): Directory containing checkpoint files.
         default_scene (scene.scene):
         fine_scene (scene.scene):
         optimizer (torch.optim.Optimizer):
@@ -782,9 +783,17 @@ def _load_ckpt(
     """
     epoch = 0
 
-    if ckpt_file is None or not os.path.exists(ckpt_file):
-        print("Checkpoint file not found.")
+    if ckpt_dir is None or not ckpt_dir.exists():
+        print("Checkpoint directory not found.")
         return epoch
+
+    ckpt_files = sorted(list(ckpt_dir.iterdir()))
+    if len(ckpt_files) == 0:
+        print("No checkpoint file found.")
+        return epoch
+
+    ckpt_file = ckpt_files[-1]
+    print(f"Loading the latest checkpoint: {str(ckpt_file)}")
 
     ckpt = torch.load(ckpt_file, map_location="cpu")
 

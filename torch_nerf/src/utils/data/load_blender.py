@@ -3,7 +3,7 @@ load_blender.py - Utility for loading blender scenes.
 """
 
 import json
-import os
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 import cv2
@@ -110,7 +110,7 @@ def pose_spherical(
 
 
 def load_blender_data(
-    base_dir: str,
+    base_dir: Path,
     dataset_type: str,
     half_res: bool = False,
     test_idx_skip: int = 1,
@@ -119,7 +119,7 @@ def load_blender_data(
     Load 'synthetic blender' data.
 
     Args:
-        base_dir (str): Root directory of dataset to be loaded.
+        base_dir (Path): Root directory of dataset to be loaded.
         dataset_type (str): Type of the dataset. Can be 'train', 'test', 'val'.
         half_res (bool): Determines whether to halve the size of images or not.
             Set to 'False' by default.
@@ -143,7 +143,7 @@ def load_blender_data(
             f"Unsupported dataset type. Expected one of {dataset_types}. Got {dataset_type}"
         )
 
-    with open(os.path.join(base_dir, f"transforms_{dataset_type}.json"), "r") as pose_file:
+    with open(base_dir / f"transforms_{dataset_type}.json", "r") as pose_file:
         meta = json.load(pose_file)
 
     imgs = []
@@ -158,12 +158,10 @@ def load_blender_data(
 
     img_fnames = []
     for frame in meta["frames"][::skip]:
-        img_fname = os.path.join(base_dir, frame["file_path"] + ".png")
-        img_fname = os.path.abspath(img_fname)
-        
+        img_fname = base_dir / f"{frame['file_path']}.png"
         imgs.append(imageio.imread(img_fname))
         poses.append(np.array(frame["transform_matrix"]))
-        img_fnames.append(str(img_fname))
+        img_fnames.append(str(img_fname.stem))
     imgs = (np.array(imgs) / 255.0).astype(np.float32)
     poses = np.array(poses).astype(np.float32)
 

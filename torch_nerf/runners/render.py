@@ -53,6 +53,7 @@ def init_dataset(cfg: DictConfig) -> data.Dataset:
 
     return dataset
 
+
 @torch.no_grad()
 def render_scene(
     cfg: DictConfig,
@@ -175,8 +176,8 @@ def main(cfg: DictConfig) -> None:
         str(i).zfill(6) for i in range(len(poses))
     ]
     if render_test_views:
-        poses = dataset._poses
-        image_fnames = dataset._image_fnames
+        poses = torch.tensor(dataset._poses)
+        image_fnames = dataset._img_fnames
     for view_idx, pose in tqdm(enumerate(poses)):
 
         # render

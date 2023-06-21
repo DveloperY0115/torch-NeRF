@@ -113,7 +113,8 @@ def render_scene(
 )
 def main(cfg: DictConfig) -> None:
     """The entry point of rendering code."""
-    
+
+    # check command-line argument(s)
     assert "log_dir" in cfg.keys(), "'log_dir' must be specified in config file."
     log_dir = Path(cfg.log_dir)
     assert log_dir.exists(), f"Provided log directory {str(log_dir)} does not exist."

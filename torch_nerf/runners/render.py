@@ -4,6 +4,7 @@ render.py
 A script for rendering.
 """
 
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Tuple, Union
 
@@ -167,6 +168,7 @@ def main(cfg: DictConfig) -> None:
     save_dir = render_dir / "video"
     if render_test_views:
         save_dir = render_dir / "test_views"
+    save_dir = save_dir / datetime.now().strftime("%Y%m%d-%H%M%S")
     save_dir.mkdir(exist_ok=True, parents=True)
     print(
         f"Rendering outputs will be saved under: {str(save_dir)}"

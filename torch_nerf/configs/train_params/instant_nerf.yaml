@@ -5,6 +5,8 @@ optim:
   init_lr: 1e-2
   end_lr: 1e-3
   eps: 1e-15
+validation:
+  num_batch: 5
 log:
   epoch_btw_ckpt: 500
   epoch_btw_vis: 10

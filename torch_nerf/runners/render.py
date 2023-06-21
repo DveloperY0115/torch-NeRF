@@ -42,7 +42,7 @@ def init_dataset(cfg: DictConfig) -> data.Dataset:
             cfg.data.data_root,
             scene_name=cfg.data.scene_name,
             data_type="test",
-            half_res=cfg.data.half_res,
+            half_res=False,  # use the original rendering resolution
             white_bg=cfg.data.white_bg,
         )
     elif dataset_type == "nerf_llff":

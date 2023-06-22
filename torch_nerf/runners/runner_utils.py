@@ -413,6 +413,20 @@ def _build_visualization_routine(
 
     return visualize_scene
 
+def _init_torch(cfg: DictConfig) -> None:
+    """
+    Initializes PyTorch with the given configuration.
+
+    Args:
+        cfg (DictConfig): A config object holding parameters required
+            to configure CUDA devices.        
+    """
+    # TODO: set random seed here
+
+    # restrict the number of threads used by the current process
+    torch.set_num_threads(1)
+
+
 
 def _init_cuda(cfg: DictConfig) -> None:
     """

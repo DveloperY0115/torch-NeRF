@@ -139,7 +139,7 @@ class StratifiedSampler(RaySamplerBase):
 
         This method returns a 1D tensor whose elements are:
         [t_near, t_near + a, t_near + 2 * a, ..., t_near + (num_partitions - 1) * a]
-        where num_partitions = (t_far - t_near) / num_partitions.
+        where a = (t_far - t_near) / num_partitions.
 
         Args:
             t_start (float): The left endpoint of the interval.
